@@ -8,7 +8,7 @@
  * Team Neural Nomads — Smart India Hackathon 2026
  */
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 /**
  * Executes quantum simulation for the given circuit model.
