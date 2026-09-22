@@ -26,52 +26,37 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!inputValue.trim() && !attachedFile) return;
+  const handleSend = async (overrideText = null) => {
+    const textToSend = typeof overrideText === 'string' ? overrideText : inputValue;
+    if (!textToSend.trim() && !attachedFile) return;
 
     const userMsg = {
       role: 'user',
-      content: inputValue,
+      content: textToSend,
       file: attachedFile
     };
 
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
-    setInputValue('');
+    if (typeof overrideText !== 'string') setInputValue('');
     setAttachedFile(null);
     setShowAttachmentMenu(false);
     setIsTyping(true);
 
     try {
-      // Build the structured context for the AI backend
       const context = {
         messages: newMessages.map(m => ({ role: m.role, content: m.content })),
         circuit: circuit || null,
-        results: results || null,
-        code: null // If code editor state were passed down, we'd include it here
+        results: results || null
       };
-
-      // Call the real AI endpoint
       const response = await AIService.askQumi(context);
-
+      
       let actionPayload = null;
       if (response.type === 'ACTION' && response.action) {
         actionPayload = response.action;
-        
-        // If the AI generated a circuit, we can automatically trigger the UI action
-        // or just render the button for the user to click. For safety, we render the button.
-        if (actionPayload.type === 'circuit' && actionPayload.circuitData) {
-          // The UI button will trigger `onCircuitAction(actionPayload.circuitData)`
-        }
       }
 
-      const aiMsg = {
-        role: 'assistant',
-        content: response.content || "I am speechless.",
-        action: actionPayload
-      };
-      
-      setMessages(prev => [...prev, aiMsg]);
+      setMessages(prev => [...prev, { role: 'assistant', content: response.content || "I am speechless.", action: actionPayload }]);
     } catch (error) {
       setMessages(prev => [...prev, { role: 'assistant', content: 'I encountered a quantum interference error. Please try again.' }]);
     } finally {
@@ -87,7 +72,6 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
   };
 
   const handleAttach = (type) => {
-    // Mocking file attachment for frontend UI/UX purposes
     let fileName = '';
     let icon = null;
     
@@ -97,6 +81,16 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
     
     setAttachedFile({ name: fileName, type, icon });
     setShowAttachmentMenu(false);
+  };
+
+  const handleAction = (actionType) => {
+    let text = '';
+    if (actionType === 'explain') text = "Explain this circuit to me step-by-step.";
+    if (actionType === 'debug') text = "Debug my circuit. Are there any errors or missing controls?";
+    if (actionType === 'optimize') text = "Optimize my circuit. Are there any redundant gates I can remove?";
+    if (actionType === 'predict') text = "Predict the output of this circuit. What should the measurement probabilities be?";
+    
+    handleSend(text);
   };
 
   const contextualActions = [
@@ -133,15 +127,30 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
       </a>
 
       <div className="flex flex-wrap justify-center gap-3 max-w-2xl">
-        {contextualActions.slice(0, 4).map((action, idx) => (
-          <button 
-            key={idx}
-            onClick={() => setInputValue(action)} 
-            className="px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-purple-500/20 hover:border-purple-500/50 text-xs text-gray-300 transition-colors shadow-sm"
-          >
-            {action}
-          </button>
-        ))}
+        <button 
+          onClick={() => handleAction('explain')}
+          className="px-4 py-2 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs font-mono hover:bg-purple-500/20 transition-colors"
+        >
+          Explain this circuit
+        </button>
+        <button 
+          onClick={() => handleAction('debug')}
+          className="px-4 py-2 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs font-mono hover:bg-rose-500/20 transition-colors"
+        >
+          Debug my circuit
+        </button>
+        <button 
+          onClick={() => handleAction('optimize')}
+          className="px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-mono hover:bg-emerald-500/20 transition-colors"
+        >
+          Optimize circuit
+        </button>
+        <button 
+          onClick={() => handleAction('predict')}
+          className="px-4 py-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-mono hover:bg-cyan-500/20 transition-colors"
+        >
+          Predict the output
+        </button>
       </div>
     </div>
   );

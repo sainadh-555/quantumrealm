@@ -107,6 +107,29 @@ export default function StudentDashboard({ isOpen, onClose }) {
             </div>
           </div>
 
+          {/* Recommended For You */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-purple-500/20 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 blur-3xl rounded-full mix-blend-screen" />
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-lg font-bold text-white font-['Space_Grotesk']">Recommended For You</h3>
+                </div>
+                <div className="flex flex-col gap-1 text-sm text-gray-300">
+                  <p>You are strong in: <span className="text-emerald-400 font-bold">Qubits, Basic Gates</span></p>
+                  <p>Needs practice: <span className="text-amber-400 font-bold">Entanglement</span></p>
+                </div>
+              </div>
+              <button 
+                onClick={() => onClose()} // This would realistically navigate to the concept, but for the MVP closing the modal to see the Learning Hub works.
+                className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all shadow-lg shadow-purple-500/20 whitespace-nowrap flex items-center gap-2"
+              >
+                <Zap className="w-4 h-4" /> Start Recommended Lesson
+              </button>
+            </div>
+          </div>
+
           {/* Mastery Stages */}
           <div>
             <h3 className="text-lg font-bold text-white font-['Space_Grotesk'] mb-4">Concept Mastery</h3>

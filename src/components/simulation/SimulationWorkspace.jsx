@@ -46,6 +46,8 @@ export default function SimulationWorkspace({
   const [isBottomExpanded, setIsBottomExpanded] = useState(false);
   const [isQumiExpanded, setIsQumiExpanded] = useState(false);
 
+    const [selectedBackend, setSelectedBackend] = useState('local');
+
   useEffect(() => {
     if (initialConcept && conceptStarters[initialConcept]) {
       const c = conceptStarters[initialConcept];
@@ -70,6 +72,11 @@ export default function SimulationWorkspace({
   };
 
   const handleRunSimulation = async () => {
+    if (selectedBackend !== 'local') {
+      setCircuitError(`Cloud execution on ${selectedBackend} requires API credentials. Falling back to Local Simulator is disabled for realism.`);
+      return;
+    }
+    
     setCircuitError(null);
     const validation = validateCircuit(circuit);
     if (!validation.isValid) {
@@ -141,8 +148,22 @@ export default function SimulationWorkspace({
             </div>
             <div className="w-px h-6 bg-white/10"></div>
             <div className="flex flex-col">
-              <span className="text-gray-500 text-[10px] uppercase">Backend</span>
-              <span className="text-green-400 font-bold">Local Simulator</span>
+              <span className="text-gray-500 text-[10px] uppercase block mb-0.5">Backend</span>
+              <select
+                value={selectedBackend}
+                onChange={(e) => {
+                  setSelectedBackend(e.target.value);
+                  setCircuitError(null);
+                }}
+                className={`bg-transparent font-bold outline-none cursor-pointer appearance-none ${
+                  selectedBackend === 'local' ? 'text-green-400' : 'text-amber-400'
+                }`}
+              >
+                <option value="local" className="bg-[#030511] text-gray-300">Local Simulator</option>
+                <option value="qiskit_aer" className="bg-[#030511] text-gray-300">Qiskit Aer (Cloud)</option>
+                <option value="pennylane" className="bg-[#030511] text-gray-300">PennyLane (Cloud)</option>
+                <option value="ibm_quantum" className="bg-[#030511] text-gray-300">IBM Quantum Hardware</option>
+              </select>
             </div>
           </div>
 
