@@ -72,7 +72,7 @@ export default function CircuitCanvas({
 
   return (
     <div
-      className="flex-1 flex flex-col glass-panel rounded-2xl border border-white/10 overflow-hidden bg-[#070a1b]/90 shadow-2xl"
+      className="flex-1 flex flex-col bg-[#0b0e1b] border-x border-white/5 relative z-0 overflow-hidden"
       onClick={() => onSelectOp && onSelectOp(null)}
     >
       
@@ -197,16 +197,16 @@ export default function CircuitCanvas({
       <div className="flex-1 p-5 overflow-x-auto relative min-h-[260px] bg-quantum-grid bg-repeat select-none">
         
         {/* Column Headers */}
-        <div className="flex items-center mb-2">
+        <div className="flex items-center mb-2 w-max min-w-full">
           {/* Offset spacer matching label width */}
-          <div className="w-16 sm:w-20 shrink-0 pr-3"></div>
+          <div className="w-16 sm:w-20 shrink-0 pr-3 sticky left-0 z-20 bg-[#0b0e1b]"></div>
           {/* Header Grid */}
           <div
             className="flex-1 grid text-center font-mono text-[10px] text-gray-500"
-            style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+            style={{ gridTemplateColumns: `repeat(${columns}, minmax(64px, 1fr))` }}
           >
             {Array.from({ length: columns }).map((_, cIdx) => (
-              <div key={cIdx} className="w-full">
+              <div key={cIdx} className="w-[56px] mx-auto flex items-center justify-center">
                 Col {cIdx + 1}
               </div>
             ))}
@@ -214,12 +214,12 @@ export default function CircuitCanvas({
         </div>
 
         {/* Qubit Wire Rows & Overlays Container */}
-        <div className="relative">
+        <div className="relative w-max min-w-full">
           
           {/* Vertical Glowing Lines for Controlled Gates (CNOT / CZ) */}
           <div className="absolute inset-0 flex pointer-events-none z-10">
             {/* Offset spacer */}
-            <div className="w-16 sm:w-20 shrink-0 pr-3"></div>
+            <div className="w-16 sm:w-20 shrink-0 pr-3 sticky left-0 z-20"></div>
             {/* Overlay grid matching wire columns */}
             <div className="flex-1 relative h-full">
               {verticalConnections.map(conn => {
@@ -265,66 +265,7 @@ export default function CircuitCanvas({
 
         </div>
 
-        {/* Gate Inspector Panel */}
-        {selectedOpId && (() => {
-          const selectedOp = operations.find(op => op.id === selectedOpId);
-          if (!selectedOp) return null;
-          const gateDef = QUANTUM_GATES.find(g => g.id === selectedOp.gate) || { 
-            name: selectedOp.gate, 
-            description: 'Custom Gate', 
-            detail: 'Details unavailable.',
-            matrix: '?'
-          };
-          
-          return (
-            <div className="mt-6 p-4 rounded-xl bg-[#0d132b]/80 border border-cyan-500/30 flex flex-col md:flex-row items-start gap-5 animate-in fade-in slide-in-from-bottom-2 shadow-xl backdrop-blur-md">
-              
-              <div className="flex items-start gap-4 flex-1">
-                <div className={`w-14 h-14 rounded-xl ${gateDef.color || 'bg-cyan-500/20 text-cyan-300'} border flex items-center justify-center shrink-0 shadow-inner`}>
-                  <span className="font-mono font-bold text-2xl">{selectedOp.gate}</span>
-                </div>
-                
-                <div className="flex-1 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-white font-['Space_Grotesk'] text-base tracking-wide flex items-center gap-2">
-                      {gateDef.name} Gate
-                    </h4>
-                  </div>
-                  <p className="text-sm text-cyan-200/90 font-medium">{gateDef.description}</p>
-                  <p className="text-xs text-gray-400 leading-relaxed">{gateDef.detail}</p>
-                  
-                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs font-mono">
-                    <div className="px-2 py-1 rounded bg-black/30 border border-white/5 text-gray-300">
-                      <span className="text-gray-500 mr-1">Target:</span>q{selectedOp.target !== undefined ? selectedOp.target : selectedOp.qubit}
-                    </div>
-                    {selectedOp.control !== undefined && (
-                      <div className="px-2 py-1 rounded bg-black/30 border border-white/5 text-gray-300">
-                        <span className="text-gray-500 mr-1">Control:</span>q{selectedOp.control}
-                      </div>
-                    )}
-                    <div className="px-2 py-1 rounded bg-black/30 border border-white/5 text-gray-300">
-                      <span className="text-gray-500 mr-1">Step:</span>{selectedOp.column + 1}
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Right Side: Matrix and Actions */}
-              <div className="flex flex-col items-end shrink-0 gap-3 min-w-[140px] w-full md:w-auto">
-                <div className="text-xs font-mono text-gray-400 self-end md:self-auto mb-2 md:mb-0">
-                  <kbd className="px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-300 font-bold text-[10px] shadow-sm">Del</kbd> to remove
-                </div>
-                {gateDef.matrix && (
-                  <div className="px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-center w-full">
-                    <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Matrix</div>
-                    <div className="font-mono text-xs text-purple-300 font-bold whitespace-nowrap">{gateDef.matrix}</div>
-                  </div>
-                )}
-              </div>
-
-            </div>
-          );
-        })()}
 
       </div>
 

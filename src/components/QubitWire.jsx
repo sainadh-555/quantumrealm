@@ -45,11 +45,11 @@ export default function QubitWire({
   return (
     <div className="flex items-center h-16 relative group">
       {/* Qubit Label Badge */}
-      <div className="w-16 sm:w-20 shrink-0 flex items-center justify-between pr-3 select-none">
-        <div className="px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-mono font-bold text-xs shadow-sm flex items-center gap-1">
+      <div className="w-16 sm:w-20 shrink-0 flex items-center justify-between pr-3 select-none sticky left-0 z-20 bg-[#0b0e1b] border-r border-white/5">
+        <div className="px-2.5 py-1 rounded bg-cyan-900/30 border border-cyan-700/50 text-cyan-300 font-mono font-bold text-xs flex items-center gap-1">
           <span>q{qubitIndex}</span>
         </div>
-        <span className="text-gray-600 font-mono text-[10px]">|0⟩</span>
+        <span className="text-gray-500 font-mono text-[10px] mr-1">|0⟩</span>
       </div>
 
       {/* Wire Container */}
@@ -60,7 +60,7 @@ export default function QubitWire({
         {/* Column Slots Grid */}
         <div
           className="relative z-10 grid w-full h-full items-center"
-          style={{ gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `repeat(${columnsCount}, minmax(64px, 1fr))` }}
         >
           {Array.from({ length: columnsCount }).map((_, colIdx) => {
             // Find operations on this qubit and column

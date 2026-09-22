@@ -12,10 +12,10 @@ export default function GateItem({ gate, onSelectGate, onExplainGate, isSelected
       draggable
       onDragStart={handleDragStart}
       onClick={() => onSelectGate && onSelectGate(gate)}
-      className={`group relative flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-grab active:cursor-grabbing select-none ${
+      className={`group relative flex items-center justify-between p-2 rounded border transition-all cursor-grab active:cursor-grabbing select-none ${
         isSelected
-          ? 'bg-cyan-500/20 border-cyan-400 ring-2 ring-cyan-400/50 shadow-lg shadow-cyan-500/20'
-          : 'bg-[#101633]/80 border-white/10 hover:border-cyan-500/50 hover:bg-[#161d42]'
+          ? 'bg-[#151a2d] border-cyan-500 border-l-4'
+          : 'bg-[#0b0e1b] border-white/5 hover:border-white/20 hover:bg-[#121626]'
       }`}
     >
       <div className="flex items-center space-x-2.5">
