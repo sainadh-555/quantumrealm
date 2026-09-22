@@ -141,7 +141,7 @@ export default function CodeEditor({
         </div>
 
         {/* Toolbar Buttons (Only show in Code tab) */}
-        {activeTab === 'code' && (
+        {activeTab === 'code' && 
           <div className="flex items-center space-x-1">
           
           {/* Toggle Edit Mode */}
@@ -192,7 +192,7 @@ export default function CodeEditor({
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
         </div>
-        )}
+        }
       </div>
 
       {/* Editor Body */}
