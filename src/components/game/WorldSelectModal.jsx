@@ -27,6 +27,7 @@ export const WORLDS = [
     tagline: 'Hadamard Gates & Wave Interference',
     concepts: ['Hadamard', 'Superposition', 'Probability'],
     speedFactor: 1.15,
+    requiredLevel: 3,
     gradient: 'from-cyan-900/60 via-blue-900/40 to-[#070a1a]',
     borderColor: 'border-cyan-500/40',
     accentColor: 'text-cyan-400',
@@ -34,10 +35,11 @@ export const WORLDS = [
   },
   {
     id: 3,
-    name: 'ENTANGLEMENT STATION',
+    name: 'ENTANGLEMENT METROPOLIS',
     tagline: 'Non-Local Bell State Correlations',
     concepts: ['CNOT', 'Bell states', 'Entanglement'],
     speedFactor: 1.3,
+    requiredLevel: 6,
     gradient: 'from-emerald-900/60 via-teal-900/40 to-[#070a1a]',
     borderColor: 'border-emerald-500/40',
     accentColor: 'text-emerald-400',
@@ -79,7 +81,7 @@ export default function WorldSelectModal({
 }) {
   if (!isOpen) return null;
 
-  const unlockedWorlds = ProgressService.getState().unlockedWorlds || [1, 2];
+  const playerLevel = ProgressService.getState().level || 1;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
@@ -112,7 +114,7 @@ export default function WorldSelectModal({
         {/* Worlds Grid */}
         <div className="space-y-3 mb-6">
           {WORLDS.map((w) => {
-            const isUnlocked = unlockedWorlds.includes(w.id) && !w.locked;
+            const isUnlocked = (!w.locked && (!w.requiredLevel || playerLevel >= w.requiredLevel));
             const isSelected = currentWorld === w.id;
 
             return (

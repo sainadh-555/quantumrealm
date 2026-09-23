@@ -8,6 +8,7 @@
  */
 
 import { QUANTUM_QUESTIONS } from '../data/quantumQuestions.js';
+import quantumRushQuestions from '../data/quantumRushQuestions.json';
 import { ProgressService } from './ProgressService.js';
 
 export class QuestionService {
@@ -20,6 +21,18 @@ export class QuestionService {
       if (difficulty && q.difficulty.toLowerCase() !== difficulty.toLowerCase()) return false;
       return true;
     });
+  }
+
+  /**
+   * Specific to Quantum Rush gameplay progression
+   */
+  static getQuestionForWorld(worldId) {
+    const pool = quantumRushQuestions.filter(q => q.world === worldId);
+    if (pool.length === 0) {
+      // Fallback
+      return quantumRushQuestions[Math.floor(Math.random() * quantumRushQuestions.length)];
+    }
+    return pool[Math.floor(Math.random() * pool.length)];
   }
 
   /**
@@ -131,7 +144,7 @@ export class QuestionService {
    * Evaluates user's answer and records progress
    */
   static submitAnswer(questionId, selectedOptionIndex) {
-    const question = QUANTUM_QUESTIONS.find(q => q.id === questionId);
+    const question = QUANTUM_QUESTIONS.find(q => q.id === questionId) || quantumRushQuestions.find(q => q.id === questionId);
     if (!question) {
       return { isCorrect: false, explanation: 'Question not found.' };
     }

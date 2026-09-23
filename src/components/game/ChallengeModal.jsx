@@ -35,11 +35,6 @@ export default function ChallengeModal({
     onAnswer(selectedOption === question.correctAnswer, question);
   };
 
-  const handleTryAgain = () => {
-    setSelectedOption(null);
-    setSubmitted(false);
-  };
-
   const conceptLabels = {
     qubit: { title: 'Qubit Challenge', color: 'from-purple-500 to-indigo-600', badge: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
     superposition: { title: 'Hadamard Challenge', color: 'from-cyan-500 to-blue-600', badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
@@ -152,13 +147,12 @@ export default function ChallengeModal({
                 <div className="font-bold text-xs sm:text-sm flex items-center gap-1.5 font-['Space_Grotesk']">
                   {isCorrect ? (
                     <>
-                      <span className="text-emerald-400">🎉 Correct! +{question.xp || 50} XP</span>
-                      <span className="text-gray-400 font-normal text-xs">• Concept unlocked</span>
+                      <span className="text-emerald-400">🎉 Correct! +1 LIFE & +{question.xp || 50} XP</span>
                     </>
                   ) : (
                     <>
                       <span className="text-rose-400">Not quite!</span>
-                      <span className="text-gray-400 font-normal text-xs">(-1 Life &bull; Qumi's Guidance)</span>
+                      <span className="text-gray-400 font-normal text-xs">(Life remains lost)</span>
                     </>
                   )}
                 </div>
@@ -237,14 +231,6 @@ export default function ChallengeModal({
               </button>
 
               <div className="flex items-center space-x-2 justify-end">
-                <button
-                  onClick={handleTryAgain}
-                  className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-semibold flex items-center space-x-1.5 border border-white/10 transition-colors"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Try Again</span>
-                </button>
-
                 <button
                   onClick={onResumeRun}
                   className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center space-x-1.5 transition-colors border border-white/10"

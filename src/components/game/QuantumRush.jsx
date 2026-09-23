@@ -349,18 +349,13 @@ export default function QuantumRush({
 
         // Collision Check: item near player (z between 20 and 70)
         if (item.z > 20 && item.z < 80 && Math.abs(eng.laneX - (item.lane - 1)) < 0.5) {
-          // HIT COLLECTIBLE! Trigger Educational Challenge
+          // HIT COLLECTIBLE!
           synth.playCollect();
           ProgressService.recordTokenCollected(item.type);
           setQubitsCollected(q => q + 1);
           setXpEarned(x => x + 10);
-
-          // Get Question for this concept
-          const q = QuestionService.getQuestionForToken(item.type);
-          setActiveChallenge({ token: item, question: q });
+          
           eng.collectibles.splice(i, 1);
-          setGameState('CHALLENGE'); // PAUSES THE RUN
-          return;
         }
 
         // Out of screen
@@ -387,15 +382,13 @@ export default function QuantumRush({
             synth.playHit();
             eng.invincibleTimer = 60; // 1s invincibility flash
 
-            setLives(prevLives => {
-              const newLives = prevLives - 1;
-              if (newLives <= 0) {
-                // GAME OVER
-                ProgressService.recordRunEnd(score, xpEarned, 85);
-                setGameState('GAMEOVER');
-              }
-              return newLives;
-            });
+            setLives(prevLives => prevLives - 1);
+            
+            // Get Question for this world
+            const q = QuestionService.getQuestionForWorld(currentWorldId);
+            setActiveChallenge({ token: { type: 'danger' }, question: q });
+            setGameState('CHALLENGE'); // PAUSES THE RUN
+            return;
           }
         }
 
@@ -653,16 +646,13 @@ export default function QuantumRush({
       const earned = (question.xp || 50);
       setXpEarned(x => x + earned);
       ProgressService.addXP(earned, 'Correct Quantum Answer');
+      
+      // RESTORE 1 LIFE
+      setLives(prev => Math.min(3, prev + 1));
     } else {
       synth.playHit();
       setStreak(0);
-      setLives(prev => {
-        const nextLives = prev - 1;
-        if (nextLives <= 0) {
-          // Will show game over after modal closes
-        }
-        return nextLives;
-      });
+      // Life is already lost during collision. It remains lost.
     }
   };
 

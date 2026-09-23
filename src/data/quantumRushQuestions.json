@@ -1,0 +1,134 @@
+[
+  {
+    "id": "qr_1",
+    "question": "What does a single qubit represent?",
+    "options": ["A bit that is exactly 0 or 1", "A basic unit of quantum information", "A hardware switch", "A syntax error"],
+    "correctAnswer": 1,
+    "explanation": "A qubit (quantum bit) is the basic unit of quantum information, capable of existing in superposition.",
+    "difficulty": "Beginner",
+    "concept": "qubit",
+    "world": 1,
+    "xp": 25
+  },
+  {
+    "id": "qr_2",
+    "question": "What does the |0⟩ state represent?",
+    "options": ["An error state", "A classical 0 basis state in Dirac notation", "A completely random state", "A negative charge"],
+    "correctAnswer": 1,
+    "explanation": "|0⟩ is standard Dirac notation (bra-ket) representing the computational basis state corresponding to a classical 0.",
+    "difficulty": "Beginner",
+    "concept": "qubit",
+    "world": 1,
+    "xp": 25
+  },
+  {
+    "id": "qr_3",
+    "question": "Which gate acts like a classical NOT gate?",
+    "options": ["Hadamard (H) Gate", "Pauli-Z Gate", "Pauli-X Gate", "CNOT Gate"],
+    "correctAnswer": 2,
+    "explanation": "The Pauli-X gate flips |0⟩ to |1⟩ and vice versa, exactly like a classical NOT gate.",
+    "difficulty": "Beginner",
+    "concept": "gates",
+    "world": 1,
+    "xp": 25
+  },
+  {
+    "id": "qr_4",
+    "question": "What happens when a quantum state is measured?",
+    "options": ["It remains in superposition forever", "It creates a duplicate copy of itself", "It collapses to a definite classical state (0 or 1)", "It entangles with the measurement device"],
+    "correctAnswer": 2,
+    "explanation": "Measurement destroys the quantum superposition, forcing the qubit to collapse into a classical 0 or 1 probabilistically.",
+    "difficulty": "Beginner",
+    "concept": "measurement",
+    "world": 1,
+    "xp": 25
+  },
+  {
+    "id": "qr_5",
+    "question": "Which gate is used to create an equal superposition from |0⟩?",
+    "options": ["Pauli-X Gate", "Hadamard (H) Gate", "CNOT Gate", "Toffoli Gate"],
+    "correctAnswer": 1,
+    "explanation": "The Hadamard (H) gate puts a basis state into a 50/50 equal superposition.",
+    "difficulty": "Intermediate",
+    "concept": "superposition",
+    "world": 2,
+    "xp": 50
+  },
+  {
+    "id": "qr_6",
+    "question": "What is quantum superposition?",
+    "options": ["When a qubit is physically in two places at once", "When a quantum system exists in a linear combination of multiple states simultaneously", "When two qubits combine to form a stronger bit", "A type of quantum error"],
+    "correctAnswer": 1,
+    "explanation": "Superposition allows a single qubit to perform computations on both |0⟩ and |1⟩ at the same time until measured.",
+    "difficulty": "Intermediate",
+    "concept": "superposition",
+    "world": 2,
+    "xp": 50
+  },
+  {
+    "id": "qr_7",
+    "question": "If you apply an H gate to |0⟩, what is the probability of measuring 1?",
+    "options": ["0%", "25%", "50%", "100%"],
+    "correctAnswer": 2,
+    "explanation": "The H gate creates an equal superposition, meaning there is exactly a 50% chance of measuring 0, and a 50% chance of measuring 1.",
+    "difficulty": "Intermediate",
+    "concept": "superposition",
+    "world": 2,
+    "xp": 50
+  },
+  {
+    "id": "qr_8",
+    "question": "What is quantum interference?",
+    "options": ["Radio noise disrupting a quantum computer", "Probability amplitudes adding together (constructive) or cancelling out (destructive)", "Two qubits colliding", "An error caused by measuring too early"],
+    "correctAnswer": 1,
+    "explanation": "Interference occurs when the complex probability amplitudes of quantum states combine or cancel, similar to ripples in water.",
+    "difficulty": "Intermediate",
+    "concept": "superposition",
+    "world": 2,
+    "xp": 50
+  },
+  {
+    "id": "qr_9",
+    "question": "What does a CNOT (CX) gate do?",
+    "options": ["It puts two qubits into superposition", "It measures the target qubit", "It flips the target qubit ONLY if the control qubit is 1", "It swaps two qubits"],
+    "correctAnswer": 2,
+    "explanation": "The Controlled-NOT gate applies an X (flip) operation to the target qubit conditioned on the control qubit being in the |1⟩ state.",
+    "difficulty": "Advanced",
+    "concept": "entanglement",
+    "world": 3,
+    "xp": 100
+  },
+  {
+    "id": "qr_10",
+    "question": "What is quantum entanglement?",
+    "options": ["A physical wire connecting two qubits", "A phenomenon where particles become interconnected such that the state of one instantly determines the state of the other", "When a qubit gets stuck in a superposition", "A type of quantum teleportation device"],
+    "correctAnswer": 1,
+    "explanation": "Entanglement forms a non-local correlation between qubits. Measuring one instantly collapses the state of the other perfectly.",
+    "difficulty": "Advanced",
+    "concept": "entanglement",
+    "world": 3,
+    "xp": 100
+  },
+  {
+    "id": "qr_11",
+    "question": "What is a Bell State?",
+    "options": ["A state that rings a bell when measured", "The simplest maximally entangled two-qubit state", "A classical error state", "An empty quantum circuit"],
+    "correctAnswer": 1,
+    "explanation": "A Bell state is created by applying an H gate to the first qubit, and a CNOT to entangle the second qubit to the first.",
+    "difficulty": "Advanced",
+    "concept": "entanglement",
+    "world": 3,
+    "xp": 100
+  },
+  {
+    "id": "qr_12",
+    "question": "Why is entanglement useful in Quantum Computing?",
+    "options": ["It allows computers to run faster clock speeds", "It is required for quantum teleportation and provides exponential computational speedups", "It cools down the processor", "It prevents measurement errors"],
+    "correctAnswer": 1,
+    "explanation": "Entanglement is the core resource that allows quantum algorithms to process exponentially large state spaces simultaneously.",
+    "difficulty": "Advanced",
+    "concept": "entanglement",
+    "world": 3,
+    "xp": 100
+  }
+]
