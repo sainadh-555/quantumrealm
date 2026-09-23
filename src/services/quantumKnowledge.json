@@ -1,0 +1,105 @@
+{
+  "concepts": {
+    "qubit": {
+      "definition": "A qubit (quantum bit) is the basic unit of quantum information.",
+      "intuition": "While a classical bit must be exactly 0 or 1, a qubit can exist in a superposition of both states until it is measured.",
+      "example": "If a classical bit is a coin sitting on a table showing Heads (0) or Tails (1), a qubit in superposition is like a spinning coin—it's a combination of both until you stop it (measure it)."
+    },
+    "superposition": {
+      "definition": "Superposition is the principle that a quantum system can exist in multiple states simultaneously.",
+      "intuition": "It allows a single qubit to perform computations on both 0 and 1 at the same time. The probabilities of measuring either state are determined by complex amplitudes.",
+      "example": "Try placing a Hadamard (H) gate on a |0⟩ qubit. It creates an equal superposition where measuring it yields 0 half the time and 1 half the time.",
+      "suggestedCircuit": {
+        "concept": "superposition",
+        "label": "Build Superposition Circuit",
+        "action": "LOAD_SUPERPOSITION",
+        "circuit": {
+          "qubits": 1,
+          "classicalBits": 1,
+          "columns": 3,
+          "operations": [
+            { "id": "qumi-h1", "gate": "H", "qubit": 0, "column": 0 },
+            { "id": "qumi-m1", "gate": "MEASURE", "qubit": 0, "column": 1 }
+          ]
+        }
+      }
+    },
+    "entanglement": {
+      "definition": "Entanglement is a quantum phenomenon where particles become interconnected such that the state of one instantly determines the state of the other, regardless of distance.",
+      "intuition": "If two qubits are entangled, measuring one immediately collapses the state of the other to match it perfectly, even if they are lightyears apart.",
+      "example": "The simplest entangled state is the Bell state. You create it by putting a qubit into superposition with an H gate, then using a CNOT gate to conditionally flip a second qubit based on the first.",
+      "suggestedCircuit": {
+        "concept": "entanglement",
+        "label": "Build Bell State (Entanglement)",
+        "action": "LOAD_BELL",
+        "circuit": {
+          "qubits": 2,
+          "classicalBits": 2,
+          "columns": 4,
+          "operations": [
+            { "id": "qumi-b1", "gate": "H", "qubit": 0, "column": 0 },
+            { "id": "qumi-b2", "gate": "CX", "control": 0, "target": 1, "column": 1 },
+            { "id": "qumi-m1", "gate": "MEASURE", "qubit": 0, "column": 2 },
+            { "id": "qumi-m2", "gate": "MEASURE", "qubit": 1, "column": 2 }
+          ]
+        }
+      }
+    },
+    "measurement": {
+      "definition": "Measurement forces a quantum superposition to collapse into a definite classical state (0 or 1).",
+      "intuition": "Observation destroys the quantum magic. The probability of getting a specific outcome is proportional to the square of its amplitude (Born's Rule).",
+      "example": "If a qubit is exactly halfway between 0 and 1, measuring it acts like a random number generator that yields 0 or 1 with 50/50 probability."
+    },
+    "interference": {
+      "definition": "Interference is the process where quantum probability amplitudes add together (constructive) or cancel each other out (destructive).",
+      "intuition": "It works just like ripples in a pond. Quantum algorithms use interference to amplify correct answers and cancel out incorrect ones.",
+      "example": "Applying two Hadamard gates in a row to a qubit returns it back to its original state through destructive interference of the superposition."
+    }
+  },
+  "gates": {
+    "h": {
+      "definition": "The Hadamard gate (H) creates an equal superposition.",
+      "intuition": "It maps |0⟩ to (|0⟩ + |1⟩)/√2 and |1⟩ to (|0⟩ - |1⟩)/√2. It is the gateway to quantum computation."
+    },
+    "x": {
+      "definition": "The Pauli-X gate acts as a quantum NOT gate.",
+      "intuition": "It flips the state of a qubit: |0⟩ becomes |1⟩, and |1⟩ becomes |0⟩."
+    },
+    "y": {
+      "definition": "The Pauli-Y gate is a bit and phase flip.",
+      "intuition": "It rotates the qubit state around the Y-axis of the Bloch sphere by 180 degrees (π radians)."
+    },
+    "z": {
+      "definition": "The Pauli-Z gate acts as a phase flip.",
+      "intuition": "It leaves |0⟩ unchanged but flips the sign of |1⟩ to -|1⟩. It rotates the state around the Z-axis of the Bloch sphere."
+    },
+    "cnot": {
+      "definition": "The Controlled-NOT (CNOT or CX) gate is a two-qubit gate.",
+      "intuition": "It flips the Target qubit ONLY if the Control qubit is |1⟩. It is essential for creating entanglement."
+    },
+    "measure": {
+      "definition": "The Measurement gate extracts classical information from a qubit.",
+      "intuition": "It collapses the quantum state onto the Z-basis (0 or 1) and writes the result to a classical bit."
+    }
+  },
+  "quizzes": [
+    {
+      "question": "Which gate creates an equal superposition from the |0⟩ state?",
+      "options": ["Pauli-X", "Hadamard (H)", "Pauli-Z", "CNOT"],
+      "correct": 1,
+      "explanation": "The Hadamard (H) gate transforms a definite basis state into a superposition where it has a 50% chance of being measured as 0 or 1."
+    },
+    {
+      "question": "What is the primary function of a CNOT gate?",
+      "options": ["To measure a qubit", "To rotate a qubit by 90 degrees", "To conditionally flip a target qubit based on a control qubit", "To destroy quantum noise"],
+      "correct": 2,
+      "explanation": "CNOT (Controlled-NOT) applies an X (flip) operation to the target qubit ONLY if the control qubit is in the |1⟩ state. This is how we entangle qubits!"
+    },
+    {
+      "question": "What happens when you measure a qubit in superposition?",
+      "options": ["It collapses to a definite state (0 or 1)", "It creates a copy of itself", "It becomes a classical bit with value 0.5", "It entangles with the observer"],
+      "correct": 0,
+      "explanation": "Measurement destroys the superposition, forcing the qubit to probabilistically collapse into either the |0⟩ or |1⟩ state."
+    }
+  ]
+}

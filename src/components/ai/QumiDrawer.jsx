@@ -51,61 +51,46 @@ export default function QumiDrawer({
     setIsTyping(true);
 
     const q = query.toLowerCase();
-    let responseText = '';
-    let actions = [];
-
-    try {
-      if (q.includes('entangle') && (!circuit || circuit.qubits < 2)) {
-        responseText = `### 🔗 Entanglement Analysis\n\nYour current circuit only has **${circuit?.qubits || 1} qubit**. Entanglement is a non-local correlation between *multiple* quantum particles.\n\nTo create entanglement:\n1. Add a second qubit ($q_1$).\n2. Put $q_0$ into superposition with a **Hadamard (H)** gate.\n3. Entangle them with a **CNOT** gate ($q_0 \\to q_1$).`;
-        actions = [
-          { type: 'ADD_QUBIT', label: '+ Add Qubit q1' },
-          { type: 'ADD_CNOT', label: '+ Add CNOT Gate' },
-          { type: 'LOAD_BELL', label: 'Load Bell State Circuit' }
-        ];
-      } else if (q.includes('circuit') || q.includes('what does this circuit do')) {
-        const res = await AIService.explainCircuit(circuit);
-        responseText = res.text;
-        actions = res.suggestedActions || [];
-      } else if (q.includes('result') || q.includes('why') || q.includes('50%') || q.includes('outcome') || q.includes('50/50')) {
-        responseText = await AIService.explainSimulationResult(circuit, results);
-      } else if (q.includes('debug') || q.includes('error') || q.includes('wrong') || q.includes('fix')) {
-        responseText = await AIService.debugCircuit(circuit);
-      } else if (q.includes('hadamard') || q.includes('superposition')) {
-        responseText = await AIService.explainConcept('superposition');
-        actions = [{ type: 'LOAD_SUPERPOSITION', label: 'Explore Superposition in Lab' }];
-      } else if (q.includes('bell') || q.includes('entangle')) {
-        responseText = await AIService.explainConcept('entanglement');
-        actions = [{ type: 'LOAD_BELL', label: 'Load Bell State Circuit' }];
-      } else if (q.includes('grover')) {
-        responseText = await AIService.explainConcept('grover');
-        actions = [{ type: 'LOAD_GROVER', label: 'Load Grover Algorithm' }];
-      } else {
-        responseText = `### ⚛️ Qumi's Response\n\nRegarding: *"${query}"*\n\nIn quantum computation, information is represented as complex probability amplitudes in a Hilbert space. Every operation must be unitary (preserving total probability = 1).\n\nIf you are experimenting in Quantum Lab, try building a superposition with **H** or an entangled state with **CNOT**!`;
-      }
-    } catch (e) {
-      responseText = "I encountered a minor issue processing that question. Feel free to ask about your circuit or quantum concepts!";
-    }
-
+    
+    // Call the local QMe AI engine
+    const context = {
+      messages: [...messages, userMsg],
+      circuit: circuit,
+      results: results
+    };
+    
     setIsTyping(false);
-    setMessages(prev => [
-      ...prev,
-      {
-        id: `msg-qumi-${Date.now()}`,
-        sender: 'qumi',
-        text: responseText,
-        suggestedActions: actions
-      }
-    ]);
+    
+    try {
+      const response = await AIService.askQumi(context);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `msg-qumi-${Date.now()}`,
+          sender: 'qumi',
+          text: response.content,
+          suggestedActions: response.action ? [response.action] : []
+        }
+      ]);
+    } catch (e) {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `msg-qumi-${Date.now()}`,
+          sender: 'qumi',
+          text: "I encountered an error processing that question. Please try asking about quantum concepts or circuit analysis!",
+          suggestedActions: []
+        }
+      ]);
+    }
   };
 
   const contextualActions = [
-    "Explain this circuit",
-    "Predict the output",
-    "Explain this gate",
-    "Why is my answer wrong?",
-    "Give me a hint",
-    "Challenge me",
-    "Show me the next step"
+    "Explain superposition like I'm 10",
+    "Build a Bell state",
+    "Why am I getting this result?",
+    "Explain my current circuit",
+    "Quiz me on quantum gates"
   ];
 
   return (
