@@ -107,7 +107,7 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
         <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full"></div>
         <Bot className="w-12 h-12 text-purple-400 relative z-10" />
       </div>
-      <h2 className="text-3xl font-black font-['Space_Grotesk'] text-white mb-2 tracking-wide">QMe</h2>
+      <h2 className="text-3xl font-black font-['Space_Grotesk'] text-white mb-2 tracking-wide">Qumi</h2>
       <p className="text-purple-300 font-mono text-sm mb-8 tracking-widest uppercase">Your Quantum Learning Companion</p>
       
       <p className="text-gray-400 max-w-md mx-auto mb-6 leading-relaxed">
@@ -146,7 +146,7 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
                 }`}>
                   {msg.role === 'assistant' && (
                     <div className="flex items-center gap-2 mb-2 text-purple-400 font-['Space_Grotesk'] font-bold text-sm">
-                      <Bot className="w-4 h-4" /> QMe
+                      <Bot className="w-4 h-4" /> Qumi
                     </div>
                   )}
                   

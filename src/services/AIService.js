@@ -1,7 +1,7 @@
 /**
  * AIService.js
  * 
- * QMe: "Your Quantum Learning Companion"
+ * Qumi: "Your Quantum Learning Companion"
  * AI Pedagogical & Quantum State Analysis Engine (Fully Local).
  */
 import quantumKnowledge from './quantumKnowledge.json';
@@ -22,7 +22,7 @@ export class AIService {
     if (nonQuantumKeywords.some(kw => lastMessage.includes(kw))) {
       return {
         type: 'TEXT',
-        content: "That's outside my domain! I'm QMe, your dedicated Quantum Learning Assistant. Ask me anything about quantum computing, quantum circuits, gates, algorithms, or the current simulation.",
+        content: "That's outside my domain! I'm Qumi, your dedicated Quantum Learning Assistant. Ask me anything about quantum computing, quantum circuits, gates, algorithms, or the current simulation.",
         action: null
       };
     }
@@ -64,7 +64,7 @@ export class AIService {
     // 4. Default Fallback
     return {
       type: 'TEXT',
-      content: `I am QMe, your local Quantum Tutor. I can explain quantum concepts, analyze your current circuit, predict results, or even generate circuits for you. Try asking me "What is a qubit?" or "Build a Bell state."`,
+      content: `I can help with quantum concepts, circuits, simulation results, or Qiskit. What would you like to explore?`,
       action: null
     };
   }
