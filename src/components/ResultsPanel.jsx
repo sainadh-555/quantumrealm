@@ -3,10 +3,21 @@ import ProbabilityChart from './ProbabilityChart';
 import StateVector from './StateVector';
 import BlochSphere from './BlochSphere';
 import CircuitInfo from './CircuitInfo';
-import { BarChart3, Binary, Compass, Info, CheckCircle2, Sparkles } from 'lucide-react';
+import { BarChart3, Binary, Compass, Info, CheckCircle2, Sparkles, Download } from 'lucide-react';
 
 export default function ResultsPanel({ results, circuit, isRunning, isCollapsed, onToggleCollapse }) {
   const [activeTab, setActiveTab] = useState('probability');
+
+  const handleDownloadResults = () => {
+    if (!results) return;
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(results, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "quantum_results.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
 
   if (!results && !isRunning) {
     return (
@@ -50,28 +61,39 @@ export default function ResultsPanel({ results, circuit, isRunning, isCollapsed,
         </div>
 
         {/* Tab Buttons */}
-        <div className="flex items-center space-x-1">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-               <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  if (isCollapsed) onToggleCollapse();
-                }}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-t-lg text-xs font-medium transition-all border-b-2 ${
-                  isActive && !isCollapsed
-                    ? 'text-cyan-400 border-cyan-400 bg-cyan-500/5'
-                    : 'text-gray-500 border-transparent hover:text-gray-300'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{tab.label}</span>
-              </button>
-            );
-          })}
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    if (isCollapsed) onToggleCollapse();
+                  }}
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-t-lg text-xs font-medium transition-all border-b-2 ${
+                    isActive && !isCollapsed
+                      ? 'text-cyan-400 border-cyan-400 bg-cyan-500/5'
+                      : 'text-gray-500 border-transparent hover:text-gray-300'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          
+          <button
+            onClick={handleDownloadResults}
+            className="ml-2 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-colors flex items-center space-x-1 text-xs"
+            title="Download Results (.json)"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline font-mono">.json</span>
+          </button>
         </div>
       </div>
 
