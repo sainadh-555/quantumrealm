@@ -94,13 +94,11 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
   };
 
   const contextualActions = [
-    "Explain this circuit",
-    "Predict the output",
-    "Explain this gate",
-    "Why is my answer wrong?",
-    "Give me a hint",
-    "Challenge me",
-    "Show me the next step"
+    "Explain superposition like I'm 10",
+    "Build a Bell state",
+    "Why am I getting this result?",
+    "Explain my current circuit",
+    "Quiz me on quantum gates"
   ];
 
   const EmptyState = () => (
@@ -109,48 +107,23 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
         <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full"></div>
         <Bot className="w-12 h-12 text-purple-400 relative z-10" />
       </div>
-      <h2 className="text-3xl font-black font-['Space_Grotesk'] text-white mb-2 tracking-wide">QUMI</h2>
+      <h2 className="text-3xl font-black font-['Space_Grotesk'] text-white mb-2 tracking-wide">QMe</h2>
       <p className="text-purple-300 font-mono text-sm mb-8 tracking-widest uppercase">Your Quantum Learning Companion</p>
       
       <p className="text-gray-400 max-w-md mx-auto mb-6 leading-relaxed">
         I analyze your live circuit, simulate quantum states, and guide your learning journey.
       </p>
 
-      <a 
-        href="https://quantum-ai-tutor.streamlit.app/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-purple-500/20 mb-8 transition-all hover:scale-105"
-      >
-        <Bot className="w-4 h-4" />
-        Open Advanced AI Tutor (Streamlit)
-      </a>
-
-      <div className="flex flex-wrap justify-center gap-3 max-w-2xl">
-        <button 
-          onClick={() => handleAction('explain')}
-          className="px-4 py-2 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs font-mono hover:bg-purple-500/20 transition-colors"
-        >
-          Explain this circuit
-        </button>
-        <button 
-          onClick={() => handleAction('debug')}
-          className="px-4 py-2 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs font-mono hover:bg-rose-500/20 transition-colors"
-        >
-          Debug my circuit
-        </button>
-        <button 
-          onClick={() => handleAction('optimize')}
-          className="px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-mono hover:bg-emerald-500/20 transition-colors"
-        >
-          Optimize circuit
-        </button>
-        <button 
-          onClick={() => handleAction('predict')}
-          className="px-4 py-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-mono hover:bg-cyan-500/20 transition-colors"
-        >
-          Predict the output
-        </button>
+      <div className="flex flex-wrap justify-center gap-3 max-w-2xl mt-4">
+        {contextualActions.map((action, idx) => (
+          <button 
+            key={idx}
+            onClick={() => handleSend(action)}
+            className="px-4 py-2 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs font-mono hover:bg-purple-500/20 transition-colors"
+          >
+            {action}
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -173,7 +146,7 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
                 }`}>
                   {msg.role === 'assistant' && (
                     <div className="flex items-center gap-2 mb-2 text-purple-400 font-['Space_Grotesk'] font-bold text-sm">
-                      <Bot className="w-4 h-4" /> QUMI
+                      <Bot className="w-4 h-4" /> QMe
                     </div>
                   )}
                   
@@ -188,14 +161,22 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
                   </div>
 
                   {msg.action && (
-                    <div className="mt-4 pt-3 border-t border-purple-500/20">
-                      <button 
-                        onClick={() => onCircuitAction?.(msg.action.type, msg.action.circuitData)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors text-sm font-bold"
-                      >
-                        {msg.action.type === 'circuit' ? <FlaskConical className="w-4 h-4" /> : <BookOpen className="w-4 h-4" />}
-                        {msg.action.label}
-                      </button>
+                    <div className="mt-4 pt-3 border-t border-purple-500/20 flex flex-col gap-3">
+                      <div className="text-xs text-amber-300/80 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+                        ⚠️ Your current circuit will be replaced with the {msg.action.concept} circuit. Continue?
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => {
+                            onCircuitAction?.(msg.action.action, msg.action.circuit);
+                            handleSend(`Okay, I built the ${msg.action.concept} circuit! Try running it.`);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors text-sm font-bold"
+                        >
+                          <FlaskConical className="w-4 h-4" />
+                          Create Circuit
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
