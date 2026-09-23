@@ -2,32 +2,152 @@
  * AIService.js
  * 
  * Qumi: "Your Quantum Learning Companion"
- * AI Pedagogical & Quantum State Analysis Engine (Fully Local).
+ * AI Pedagogical & Quantum State Analysis Engine
+ * Uses WebLLM for local inference when available, falling back to deterministic rules.
  */
 import quantumKnowledge from './quantumKnowledge.json';
+import { qumiProvider } from './QumiProvider.js';
 
 export class AIService {
 
   /**
-   * Main entry point for the local QMe AI engine.
-   * Processes the user's message, current circuit, and results to generate a response and actions.
+   * Generates the system prompt based on current application context
+   */
+  static getSystemPrompt(context) {
+    const { circuit, results, code, mode, currentTopic, learnerLevel } = context;
+    
+    let prompt = `You are Qumi, the quantum computing tutor inside Quantum Relum.
+Your domain is quantum computing and closely related mathematics and physics.
+You help beginners and advanced learners understand quantum concepts, gates, circuits, Qiskit, algorithms, simulation results, state vectors, and probabilities.
+
+For non-quantum questions (like sports, java, weather, etc.), politely state that the topic is outside your domain and redirect the user toward quantum computing.
+Be educational, clear, accurate, and concise.
+
+Current Context:
+Mode: ${mode || 'Simulation'}
+`;
+
+    if (mode === 'learning') {
+      prompt += `Current Learning Topic: ${currentTopic || 'General'}\nLearner Level: ${learnerLevel || 'Beginner'}\nTailor your explanation to this level.\n`;
+    }
+
+    if (circuit) {
+      prompt += `\nUser's Current Circuit:
+Qubits: ${circuit.qubits || 1}
+Operations: ${circuit.operations && circuit.operations.length > 0 ? JSON.stringify(circuit.operations) : 'Empty'}
+`;
+    }
+
+    if (results && results.counts) {
+      prompt += `\nLatest Simulation Results:
+Counts: ${JSON.stringify(results.counts)}
+`;
+    }
+
+    prompt += `
+When the user requests to create or modify a circuit (e.g. "Build a Bell state"), you MUST provide a structured JSON action block at the very end of your response to execute it.
+Only include the JSON block if you are building or modifying a circuit.
+
+Format for the JSON block:
+\`\`\`json
+{
+  "action": "createCircuit",
+  "gates": [
+    { "type": "H", "qubits": [0], "column": 0 },
+    { "type": "CX", "qubits": [0, 1], "column": 1 }
+  ]
+}
+\`\`\`
+
+Never pretend to have analyzed a circuit or simulation if the actual context was not supplied. Do not fabricate simulation results.
+`;
+
+    return prompt;
+  }
+
+  /**
+   * Main entry point for the local Qumi AI engine.
    */
   static async askQumi(context) {
-    const { messages, circuit, results, code } = context;
-    // Get the latest user message
-    const lastMessage = messages[messages.length - 1]?.text?.toLowerCase() || '';
+    const { messages } = context;
+    const lastMessage = messages[messages.length - 1]?.content?.toLowerCase() || '';
+    
+    // Convert UI messages to LLM messages format
+    const llmMessages = messages.map(m => ({
+      role: m.role,
+      content: m.content
+    }));
 
-    // 1. Off-topic checking (Domain Guardrails)
+    // 1. Domain Guardrails (Fast Rejection)
     const nonQuantumKeywords = ['president', 'weather', 'java', 'c++', 'cricket', 'football', 'sports', 'politics', 'movie', 'song'];
     if (nonQuantumKeywords.some(kw => lastMessage.includes(kw))) {
       return {
         type: 'TEXT',
-        content: "That's outside my domain! I'm Qumi, your dedicated Quantum Learning Assistant. Ask me anything about quantum computing, quantum circuits, gates, algorithms, or the current simulation.",
+        content: "That's outside my domain. I'm Qumi, your Quantum Tutor. Ask me about quantum computing, circuits, gates, algorithms, Qiskit, or your simulation.",
         action: null
       };
     }
 
-    // 2. Intent Detection
+    // 2. Try Local LLM via QumiProvider
+    if (qumiProvider.status === 'READY') {
+      console.log('[QUMI] Using Local WebLLM Provider');
+      const responseText = await qumiProvider.generateResponse(
+        this.getSystemPrompt(context),
+        llmMessages
+      );
+
+      if (responseText) {
+        return this.parseLLMResponse(responseText);
+      }
+    }
+    
+    // 3. Fallback: Deterministic Engine (If LLM is offline or fails)
+    console.log('[QUMI] Using Deterministic Fallback Engine');
+    return this.deterministicFallback(lastMessage, context);
+  }
+
+  /**
+   * Parses the LLM text response for JSON action blocks
+   */
+  static parseLLMResponse(responseText) {
+    let content = responseText;
+    let action = null;
+
+    // Look for ```json block at the end of the text
+    const jsonMatch = responseText.match(/\`\`\`json\n([\s\S]*?)\n\`\`\`/);
+    if (jsonMatch) {
+      try {
+        const parsedAction = JSON.parse(jsonMatch[1]);
+        if (parsedAction && parsedAction.action) {
+          action = parsedAction.action; // e.g. "createCircuit"
+          // We map 'createCircuit' to our internal action flags
+          if (action === 'createCircuit') {
+            // For the sake of the existing UI, map to specific circuit concepts if needed, 
+            // or return the raw gates to be built.
+            // Currently QumiWorkspace handles 'entanglement' and 'superposition' specifically.
+            // We will return the structured data so the UI can process it.
+            action = { type: 'BUILD_CIRCUIT', data: parsedAction };
+          }
+        }
+        // Remove the JSON block from the text shown to the user
+        content = content.replace(jsonMatch[0], '').trim();
+      } catch (e) {
+        console.error('[QUMI] Failed to parse action JSON from LLM:', e);
+      }
+    }
+
+    return {
+      type: 'TEXT',
+      content,
+      action
+    };
+  }
+
+  // --- Deterministic Fallback Engine ---
+
+  static deterministicFallback(lastMessage, context) {
+    const { circuit, results } = context;
+
     if (lastMessage.includes('explain my circuit') || lastMessage.includes('analyze my circuit') || lastMessage.includes('what does this circuit do')) {
       return this.analyzeCircuit(circuit);
     }
@@ -48,28 +168,25 @@ export class AIService {
       return this.generateQuiz();
     }
 
-    // 3. Knowledge Base Lookup
+    // Knowledge Base Lookup
     for (const [key, data] of Object.entries(quantumKnowledge.concepts)) {
       if (lastMessage.includes(key)) {
         return this.explainConcept(data);
       }
     }
     for (const [key, data] of Object.entries(quantumKnowledge.gates)) {
-      // Check if they mentioned the gate (e.g. "cnot", "hadamard", " h gate")
       if (lastMessage.includes(key) || (key === 'h' && lastMessage.includes('hadamard'))) {
         return this.explainGate(key, data);
       }
     }
 
-    // 4. Default Fallback
+    // Fallback Clarification
     return {
       type: 'TEXT',
       content: `I can help with quantum concepts, circuits, simulation results, or Qiskit. What would you like to explore?`,
       action: null
     };
   }
-
-  // --- Sub-Engines ---
 
   static analyzeCircuit(circuit) {
     if (!circuit || circuit.operations.length === 0) {
@@ -94,67 +211,81 @@ export class AIService {
       analysis += "\n\n⚠️ **Note:** I noticed you don't have any measurement gates. You won't be able to extract classical results until you add measurements at the end!";
     }
 
-    return { type: 'TEXT', content: analysis };
+    return { type: 'TEXT', content: analysis, action: null };
   }
 
   static explainResults(results, circuit) {
-    if (!results || !results.counts) {
-      return { type: 'TEXT', content: "I don't see any simulation results yet. Please click **▶ Run Simulation** first so I can analyze the output!" };
+    if (!results || !results.counts || Object.keys(results.counts).length === 0) {
+      return { type: 'TEXT', content: "I don't have a simulation result yet. Run the circuit first and I can analyze the output." };
     }
 
-    let explanation = `### 📊 Result Analysis\n\nI see you ran the simulation for **${results.shots || 1024} shots** using the **${results.backend || 'Qiskit Aer'}** backend.\n\n`;
+    const counts = results.counts;
+    const states = Object.keys(counts);
+    let explanation = `### 📊 Results Analysis\n\nI see you ran **${results.shots || 1024} shots**.\n\n`;
     
-    const countKeys = Object.keys(results.counts);
-    if (countKeys.length === 1) {
-      explanation += `The simulation produced exactly one outcome (**|${countKeys[0]}⟩**) 100% of the time. This means your circuit is in a deterministic classical state with no superposition at the time of measurement.`;
-    } else if (countKeys.length === 2 && Math.abs(results.counts[countKeys[0]] - results.counts[countKeys[1]]) < (results.shots * 0.1)) {
-      explanation += `The results are split almost exactly 50/50 between **|${countKeys[0]}⟩** and **|${countKeys[1]}⟩**. This is the hallmark of an equal superposition!`;
+    if (states.length > 1) {
+      const is5050 = states.length === 2 && Math.abs(counts[states[0]] - counts[states[1]]) < (results.shots * 0.1);
+      if (is5050) {
+        explanation += `The results are roughly split 50/50 between **|${states[0]}⟩** and **|${states[1]}⟩**.\n\nThis indicates your qubits were in a state of **superposition** before measurement! Each time we measure, the quantum state randomly collapses into one of those classical states.`;
+      } else {
+        explanation += `The probabilities are spread across multiple states: ${states.map(s => `**|${s}⟩**`).join(', ')}.\n\nThis distribution represents the amplitudes of your quantum state vector collapsing upon measurement.`;
+      }
     } else {
-      explanation += `The results are spread across ${countKeys.length} different states. This indicates a complex superposition.`;
+      explanation += `The result is 100% deterministic, landing entirely on **|${states[0]}⟩**.\n\nThis means there was no superposition or uncertainty remaining when the measurement was applied.`;
     }
 
-    return { type: 'TEXT', content: explanation };
+    return { type: 'TEXT', content: explanation, action: null };
   }
 
-  static generateCircuitAction(conceptKey) {
-    const concept = quantumKnowledge.concepts[conceptKey];
-    if (concept && concept.suggestedCircuit) {
-      return {
-        type: 'ACTION',
-        content: `### 🏗️ Circuit Generator\n\nI can build a **${conceptKey}** circuit for you directly in the canvas.\n\n${concept.example}\n\n*Would you like me to replace your current circuit with this?*`,
-        action: concept.suggestedCircuit
-      };
-    }
-    return { type: 'TEXT', content: "I know about that concept, but I don't have a circuit template for it yet!" };
-  }
-
-  static explainConcept(conceptData) {
-    let text = `### 🧠 ${conceptData.definition}\n\n**Intuition:**\n${conceptData.intuition}\n\n**Example:**\n${conceptData.example}`;
+  static explainConcept(data) {
+    let msg = `**${data.name}**\n\n${data.intuition}\n\n`;
+    if (data.example) msg += `*Analogy:* ${data.example}\n\n`;
+    
     let action = null;
-    if (conceptData.suggestedCircuit) {
-      text += `\n\n*Would you like me to build a circuit demonstrating this?*`;
-      action = conceptData.suggestedCircuit;
+    if (data.starterCircuit) {
+      msg += `I can build a starter circuit to demonstrate this!`;
+      action = data.starterCircuit;
     }
-    return { type: 'ACTION', content: text, action };
+
+    return { type: 'TEXT', content: msg, action };
   }
 
-  static explainGate(gateName, gateData) {
-    return {
-      type: 'TEXT',
-      content: `### 🚪 Gate Analysis\n\n**${gateData.definition}**\n\n${gateData.intuition}\n\nTry dragging this gate onto the circuit canvas to see how it affects the state vector!`
-    };
+  static explainGate(key, data) {
+    let msg = `**${data.name} (${key.toUpperCase()})**\n\n${data.definition}\n\n`;
+    msg += `**Matrix:**\n\`\`\`\n${data.matrix[0]}\n${data.matrix[1]}\n\`\`\`\n`;
+    
+    return { type: 'TEXT', content: msg, action: null };
+  }
+
+  static generateCircuitAction(conceptId) {
+    let explanation = "";
+    if (conceptId === 'entanglement') {
+      explanation = "A Bell state is the simplest example of quantum entanglement. I can create one by applying an **H gate** to q0 to create superposition, followed by a **CNOT gate** from q0 to q1 to entangle them.\n\nYour current circuit will be replaced with a Bell-state circuit. Continue?";
+    } else {
+      explanation = "I can build a starter circuit to demonstrate this concept. Your current circuit will be replaced. Continue?";
+    }
+    return { type: 'TEXT', content: explanation, action: conceptId };
   }
 
   static generateQuiz() {
-    const quizzes = quantumKnowledge.quizzes;
-    const randomQuiz = quizzes[Math.floor(Math.random() * quizzes.length)];
-    
-    let text = `### 🎓 Quantum Quiz!\n\n**${randomQuiz.question}**\n\n`;
-    randomQuiz.options.forEach((opt, idx) => {
-      text += `${['A', 'B', 'C', 'D'][idx]}. ${opt}\n`;
-    });
-    text += `\n*(Try guessing! The correct answer is ${['A', 'B', 'C', 'D'][randomQuiz.correct]}: ${randomQuiz.explanation})*`;
+    return {
+      type: 'TEXT',
+      content: "Let's test you.\n\nWhich gate creates an equal superposition from |0⟩?\n\nA. Pauli-X\nB. Hadamard (H)\nC. Pauli-Z\nD. CNOT",
+      action: 'QUIZ_1'
+    };
+  }
 
-    return { type: 'TEXT', content: text };
+  static explainQuestion(question, selectedIndex) {
+    // Used by the Quantum Rush Quiz system
+    if (selectedIndex === question.correctAnswer) return { text: "Correct!" };
+    
+    return {
+      text: `Not quite! The correct answer was ${String.fromCharCode(65 + question.correctAnswer)}. ${question.explanation}`,
+      starterCircuitConcept: question.concept
+    };
+  }
+
+  static generateHint(question) {
+    return `Think about what the ${question.concept} concept fundamentally changes about a quantum state.`;
   }
 }

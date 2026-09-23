@@ -14,6 +14,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { AIService } from '../../services/AIService';
+import { qumiProvider } from '../../services/QumiProvider';
 
 export default function QumiDrawer({
   isOpen,
@@ -33,7 +34,16 @@ export default function QumiDrawer({
   ]);
   const [inputVal, setInputVal] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [modelStatus, setModelStatus] = useState({ status: 'OFFLINE', progress: 0, message: '' });
   const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      const unsubscribe = qumiProvider.setProgressListener(setModelStatus);
+      qumiProvider.initialize();
+      return () => unsubscribe();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -56,23 +66,31 @@ export default function QumiDrawer({
     const context = {
       messages: [...messages, userMsg],
       circuit: circuit,
-      results: results
+      results: results,
+      mode: 'simulation'
     };
-    
-    setIsTyping(false);
     
     try {
       const response = await AIService.askQumi(context);
+      
+      let actionPayload = null;
+      if (response.type === 'ACTION' && response.action) {
+        actionPayload = response.action;
+      } else if (response.action) {
+        actionPayload = response.action;
+      }
+
       setMessages(prev => [
         ...prev,
         {
           id: `msg-qumi-${Date.now()}`,
           sender: 'qumi',
-          text: response.content,
-          suggestedActions: response.action ? [response.action] : []
+          text: response.content || "I am speechless.",
+          suggestedActions: actionPayload ? [actionPayload] : []
         }
       ]);
     } catch (e) {
+      console.error(e);
       setMessages(prev => [
         ...prev,
         {
@@ -82,6 +100,8 @@ export default function QumiDrawer({
           suggestedActions: []
         }
       ]);
+    } finally {
+      setIsTyping(false);
     }
   };
 
@@ -154,6 +174,22 @@ export default function QumiDrawer({
             </button>
           ))}
         </div>
+
+        {/* Model Status Bar */}
+        {modelStatus.status === 'INIT' && (
+          <div className="bg-purple-900/40 border-b border-purple-500/30 px-4 py-1.5 text-[10px] font-mono text-purple-200 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" />
+              <span>{modelStatus.message}</span>
+            </div>
+            <span>{modelStatus.progress}%</span>
+          </div>
+        )}
+        {modelStatus.status === 'ERROR' && (
+          <div className="bg-red-900/40 border-b border-red-500/30 px-4 py-1.5 text-[10px] font-mono text-red-200 flex items-center space-x-2">
+            <span>⚠️ {modelStatus.message}</span>
+          </div>
+        )}
 
         {/* Chat Messages Body */}
         <div className="flex-1 p-4 overflow-y-auto space-y-4 font-sans text-xs sm:text-sm selection:bg-cyan-500/30">
@@ -231,13 +267,14 @@ export default function QumiDrawer({
               type="text"
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
-              placeholder="Ask Qumi about circuits, gates, or concepts..."
-              className="flex-1 bg-transparent text-xs text-white placeholder-gray-500 focus:outline-none py-1"
+              disabled={isTyping || modelStatus.status === 'INIT'}
+              placeholder={isTyping ? "Qumi is thinking..." : "Ask Qumi about circuits, gates, or concepts..."}
+              className="flex-1 bg-transparent text-xs text-white placeholder-gray-500 focus:outline-none py-1 disabled:opacity-50"
             />
 
             <button
               type="submit"
-              disabled={!inputVal.trim()}
+              disabled={!inputVal.trim() || isTyping || modelStatus.status === 'INIT'}
               className="p-2 rounded-xl bg-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed text-black hover:bg-cyan-400 transition-colors shadow-sm"
             >
               <Send className="w-3.5 h-3.5" />

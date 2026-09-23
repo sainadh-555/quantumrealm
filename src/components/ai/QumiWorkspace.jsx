@@ -12,6 +12,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { AIService } from '../../services/AIService';
+import { qumiProvider } from '../../services/QumiProvider';
 
 export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCircuitAction }) {
   const [messages, setMessages] = useState([]);
@@ -19,7 +20,15 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
   const [isTyping, setIsTyping] = useState(false);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
+  const [modelStatus, setModelStatus] = useState({ status: 'OFFLINE', progress: 0, message: '' });
   const messagesEndRef = useRef(null);
+
+  // Initialize WebLLM
+  useEffect(() => {
+    const unsubscribe = qumiProvider.setProgressListener(setModelStatus);
+    qumiProvider.initialize();
+    return () => unsubscribe();
+  }, []);
 
   // Auto-scroll
   useEffect(() => {
@@ -47,16 +56,20 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
       const context = {
         messages: newMessages.map(m => ({ role: m.role, content: m.content })),
         circuit: circuit || null,
-        results: results || null
+        results: results || null,
+        mode
       };
       const response = await AIService.askQumi(context);
       
       let actionPayload = null;
       if (response.type === 'ACTION' && response.action) {
         actionPayload = response.action;
+      } else if (response.action) {
+        actionPayload = response.action;
       }
 
       setMessages(prev => [...prev, { role: 'assistant', content: response.content || "I am speechless.", action: actionPayload }]);
+      setIsTyping(false);
     } catch (error) {
       setMessages(prev => [...prev, { role: 'assistant', content: 'I encountered a quantum interference error. Please try again.' }]);
     } finally {
@@ -131,6 +144,22 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
   return (
     <div className="flex flex-col h-full bg-[#0a0718] text-gray-100 rounded-3xl border border-purple-500/20 shadow-2xl overflow-hidden relative max-w-5xl mx-auto">
       
+      {/* Model Status Bar */}
+      {modelStatus.status === 'INIT' && (
+        <div className="bg-purple-900/40 border-b border-purple-500/30 px-4 py-2 text-xs font-mono text-purple-200 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" />
+            <span>{modelStatus.message}</span>
+          </div>
+          <span>{modelStatus.progress}%</span>
+        </div>
+      )}
+      {modelStatus.status === 'ERROR' && (
+        <div className="bg-red-900/40 border-b border-red-500/30 px-4 py-2 text-xs font-mono text-red-200 flex items-center space-x-2">
+          <span>⚠️ {modelStatus.message}</span>
+        </div>
+      )}
+
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth flex flex-col">
         {messages.length === 0 ? (
@@ -257,8 +286,9 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={attachedFile ? "Ask Qumi about this document..." : "Ask Qumi anything about quantum..."}
-              className="flex-1 bg-transparent border-none focus:ring-0 resize-none py-4 px-2 text-white placeholder-gray-500 leading-normal max-h-32 min-h-[56px] hide-scrollbar"
+              disabled={isTyping || modelStatus.status === 'INIT'}
+              placeholder={isTyping ? "Qumi is thinking..." : (attachedFile ? "Ask Qumi about this document..." : "Ask Qumi anything about quantum...")}
+              className="flex-1 bg-transparent border-none focus:ring-0 resize-none py-4 px-2 text-white placeholder-gray-500 leading-normal max-h-32 min-h-[56px] hide-scrollbar disabled:opacity-50"
               rows={1}
             />
 
