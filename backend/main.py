@@ -25,10 +25,21 @@ from openai import OpenAI
 load_dotenv()
 QUMI_MODEL = os.getenv("QUMI_MODEL", "gpt-4o-mini")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GROK_API_KEY = os.getenv("GROK_API_KEY")
 
-# Initialize OpenAI Client
-# Note: In production, the API key is automatically picked up from os.environ["OPENAI_API_KEY"]
-client = OpenAI(api_key=OPENAI_API_KEY)
+# Initialize Client (Supports both OpenAI and Grok)
+if GROK_API_KEY:
+    client = OpenAI(
+        api_key=GROK_API_KEY,
+        base_url="https://api.x.ai/v1"
+    )
+    # Default to a Grok model if the user didn't specify one
+    if os.getenv("QUMI_MODEL") is None:
+        QUMI_MODEL = "grok-beta"
+elif OPENAI_API_KEY:
+    client = OpenAI(api_key=OPENAI_API_KEY)
+else:
+    client = None
 
 # Try importing Qiskit
 try:
@@ -194,9 +205,9 @@ class QumiRequest(BaseModel):
 
 @app.post("/api/qumi")
 def ask_qumi(req: QumiRequest):
-    if not OPENAI_API_KEY:
+    if not client:
         return {
-            "message": "Qumi service configuration error: OPENAI_API_KEY is not set on the backend.",
+            "message": "Qumi service configuration error: Neither OPENAI_API_KEY nor GROK_API_KEY is set on the backend.",
             "toolActions": [],
             "metadata": {"provider": "none", "model": "none"}
         }
