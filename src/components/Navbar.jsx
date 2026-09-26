@@ -20,7 +20,7 @@ export default function Navbar({
           <div>
             <div className="flex items-center space-x-2">
               <span className="font-black text-base sm:text-lg tracking-wider bg-gradient-to-r from-cyan-400 via-blue-300 to-purple-400 bg-clip-text text-transparent uppercase font-['Space_Grotesk']">
-                QUANTUM LEARN
+                QUANTUM RELUM
               </span>
             </div>
             <p className="text-[10px] text-gray-400 font-mono flex items-center gap-1">

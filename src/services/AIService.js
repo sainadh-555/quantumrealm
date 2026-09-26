@@ -40,6 +40,8 @@ export class AIService {
         throw new Error(`Backend returned ${response.status}`);
       }
 
+      const data = await response.json();
+
       let actionPayload = null;
       if (data.toolActions && data.toolActions.length > 0) {
         const tool = data.toolActions[0];
@@ -72,4 +74,16 @@ export class AIService {
     }
   }
 
+  static explainQuestion(question, selectedIndex) {
+    if (selectedIndex === question.correctAnswer) return { text: "Correct!" };
+    
+    return {
+      text: `Not quite! The correct answer was ${String.fromCharCode(65 + question.correctAnswer)}. ${question.explanation}`,
+      starterCircuitConcept: question.concept
+    };
+  }
+
+  static generateHint(question) {
+    return `Think about what the ${question.concept} concept fundamentally changes about a quantum state.`;
+  }
 }

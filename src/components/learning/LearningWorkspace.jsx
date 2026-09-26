@@ -25,7 +25,7 @@ export default function LearningWorkspace({
   };
 
   return (
-    <div className="flex-1 w-full h-full bg-[#030511] overflow-hidden">
+    <div className="flex-1 flex flex-col w-full h-full bg-[#030511] overflow-hidden">
       {activeTool === 'learn' && (
         <LearningHub
           onPlayConcept={handlePlayConceptInRush}
@@ -51,6 +51,7 @@ export default function LearningWorkspace({
       {activeTool === '3d' && (
         <Learning3D
           onNavigateBack={() => setActiveTool('learn')}
+          onOpenInLab={handleExploreInLab}
         />
       )}
 
