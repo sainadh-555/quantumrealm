@@ -115,7 +115,18 @@ export default function QuantumLab({
     setIsRunning(true);
     try {
       const res = await runSimulation(circuit);
-      setResults(res);
+      
+      // Fetch AI insight for the results
+      let aiInsight = null;
+      try {
+        const insightRes = await import('../../services/AIService').then(m => m.AIService.explainSimulationResult(circuit, res));
+        // Extract the plain text from markdown if needed, or just pass it
+        aiInsight = typeof insightRes === 'string' ? insightRes.split('\n').slice(0, 3).join(' ') : "Simulation completed successfully.";
+      } catch (e) {
+        console.warn('AI Insight failed to load', e);
+      }
+
+      setResults({ ...res, aiInsight });
       ProgressService.addXP(25, 'Executed Quantum Circuit');
     } catch (err) {
       setCircuitError('Simulation execution failed. Please check gate connections.');
@@ -156,109 +167,115 @@ export default function QuantumLab({
     }
   };
 
+  // --- Dock Resizing Logic ---
+  const [dockHeight, setDockHeight] = useState(64); // 64px collapsed, 300px medium, etc.
+  const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging) return;
+      const newHeight = window.innerHeight - e.clientY;
+      setDockHeight(Math.max(64, Math.min(newHeight, window.innerHeight * 0.8)));
+    };
+    const handleMouseUp = () => setIsDragging(false);
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
+  const toggleDock = () => {
+    setDockHeight(prev => prev > 100 ? 64 : 300);
+  };
+
   return (
-    <div className="flex-1 max-w-[1720px] w-full mx-auto p-4 sm:p-6 flex flex-col space-y-5 overflow-y-auto">
+    <div className="flex flex-col h-full w-full bg-[#040612] overflow-hidden text-gray-200 font-sans select-none">
       
-      {/* Top Banner & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-        <div>
-          <div className="flex items-center space-x-2.5">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-md">
-              <FlaskConical className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold font-['Space_Grotesk'] text-white">
-                Quantum Lab
-              </h2>
-              <p className="text-xs text-gray-400 font-mono">
-                "Build the concept. See the quantum state." &bull; Qiskit Compatible Simulation
-              </p>
-            </div>
+      {/* Top Engineering Toolbar */}
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-2 bg-[#0a0d24] shrink-0 z-20 shadow-md">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 text-cyan-400">
+            <FlaskConical className="w-4 h-4" />
+            <span className="font-bold font-['Space_Grotesk'] text-sm uppercase tracking-widest text-white">Quantum Lab</span>
+          </div>
+          <div className="h-4 w-px bg-white/10 hidden sm:block"></div>
+          <div className="hidden sm:flex items-center space-x-1 text-xs font-semibold">
+            <button className="px-2 py-1 rounded hover:bg-white/5 text-gray-400 hover:text-white transition">File</button>
+            <button className="px-2 py-1 rounded hover:bg-white/5 text-gray-400 hover:text-white transition">Edit</button>
+            <button className="px-2 py-1 rounded hover:bg-white/5 text-gray-400 hover:text-white transition">View</button>
+            <button className="px-2 py-1 rounded hover:bg-white/5 text-gray-400 hover:text-white transition">Simulate</button>
+            <button className="px-2 py-1 rounded hover:bg-white/5 text-gray-400 hover:text-white transition">Learn</button>
           </div>
         </div>
 
-        {/* Toolbar Action Buttons */}
-        <div className="flex items-center space-x-2.5 flex-wrap">
+        <div className="flex items-center space-x-2 flex-wrap">
           <button
             onClick={() => setIsPresetsOpen(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-gray-200 border border-white/10 flex items-center space-x-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] text-gray-200 border border-white/10 flex items-center space-x-1.5 transition-colors"
           >
             <Layers className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Presets</span>
-          </button>
-
-          <button
-            onClick={() => updateCircuitState({ ...circuit, operations: [] })}
-            className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-gray-300 border border-white/10 flex items-center space-x-1.5 transition-colors"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-gray-400" />
-            <span>Clear</span>
+            <span className="hidden sm:inline">Presets</span>
           </button>
 
           <button
             onClick={onOpenQumi}
-            className="px-3.5 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-semibold flex items-center space-x-1.5 transition-all shadow-sm"
+            className="px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-[11px] font-semibold flex items-center space-x-1.5 transition-all"
           >
-            <Bot className="w-4 h-4 text-purple-400" />
-            <span>Ask Qumi</span>
+            <Bot className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden sm:inline">Ask Qumi</span>
+          </button>
+
+          <div className="h-4 w-px bg-white/10 hidden sm:block mx-2"></div>
+
+          <button
+            onClick={handleRunSimulation}
+            disabled={isRunning}
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold font-['Space_Grotesk'] flex items-center space-x-2 transition-all ${
+              isRunning
+                ? 'bg-cyan-500/50 text-black cursor-not-allowed'
+                : 'bg-cyan-500 hover:bg-cyan-400 text-black shadow-lg shadow-cyan-500/20'
+            }`}
+          >
+            {isRunning ? (
+              <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5 fill-black" />
+            )}
+            <span>RUN SIMULATION</span>
           </button>
         </div>
       </div>
 
-      {/* Accessible Quick Add Shortcuts */}
-      <div className="flex items-center space-x-2 overflow-x-auto pb-1 text-xs">
-        <span className="text-gray-400 text-[11px] font-mono shrink-0">Quick Add:</span>
-        {['H', 'X', 'Z', 'S', 'T', 'CX', 'MEASURE'].map(g => (
-          <button
-            key={g}
-            onClick={() => handleQuickAddGate(g)}
-            className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-gray-300 hover:text-cyan-300 border border-white/10 font-mono text-[11px] shrink-0 transition-colors"
-          >
-            +{g}
-          </button>
-        ))}
-      </div>
-
-      {/* Center 3-Column Workstation: Left Palette | Center Canvas | Right Qiskit Code */}
-      <div className="flex flex-col lg:flex-row gap-4 items-stretch min-h-[460px]">
+      {/* Main Workspace (3 Columns) */}
+      <div className="flex-1 flex flex-row items-stretch min-h-0 overflow-hidden relative z-0">
         
-        {/* Left: Gate Library */}
+        {/* Left: Gate Palette (Fixed Width) */}
         <GatePalette
           selectedGate={selectedGate}
           onSelectGate={(gate) => setSelectedGate(selectedGate?.id === gate.id ? null : gate)}
           onExplainGate={(gate) => setExplainedGate(gate)}
         />
 
-        {/* Center: Circuit Builder Canvas */}
+        {/* Center: Circuit Canvas (Flexible, Scrolls Horizontally Inside) */}
         <CircuitCanvas
           circuit={circuit}
           onAddQubit={() => {
-            if (circuit.qubits < 6) {
-              updateCircuitState({
-                ...circuit,
-                qubits: circuit.qubits + 1,
-                classicalBits: circuit.classicalBits + 1
-              });
-            }
+            if (circuit.qubits < 8) updateCircuitState({ ...circuit, qubits: circuit.qubits + 1, classicalBits: circuit.classicalBits + 1 });
           }}
           onRemoveQubit={() => {
             if (circuit.qubits > 1) {
               const targetQubit = circuit.qubits - 1;
-              const filteredOps = circuit.operations.filter(op =>
-                op.qubit !== targetQubit && op.control !== targetQubit && op.target !== targetQubit
-              );
-              updateCircuitState({
-                ...circuit,
-                qubits: circuit.qubits - 1,
-                classicalBits: Math.max(1, circuit.classicalBits - 1),
-                operations: filteredOps
-              });
+              const filteredOps = circuit.operations.filter(op => op.qubit !== targetQubit && op.control !== targetQubit && op.target !== targetQubit);
+              updateCircuitState({ ...circuit, qubits: circuit.qubits - 1, classicalBits: Math.max(1, circuit.classicalBits - 1), operations: filteredOps });
             }
           }}
           onAddColumn={() => {
-            if (circuit.columns < 12) {
-              updateCircuitState({ ...circuit, columns: circuit.columns + 1 });
-            }
+            if (circuit.columns < 30) updateCircuitState({ ...circuit, columns: circuit.columns + 1 });
           }}
           onRemoveColumn={() => {
             if (circuit.columns > 4) {
@@ -274,31 +291,16 @@ export default function QuantumLab({
           }}
           onDropGate={(gateId, qubitIdx, colIdx) => {
             const existingOps = [...circuit.operations];
-            if (gateId === 'CX' || gateId === 'CZ') {
+            if (gateId === 'CX' || gateId === 'CZ' || gateId === 'SWAP') {
               const targetQubit = (qubitIdx + 1) % circuit.qubits;
-              const newOp = {
-                id: `op-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-                gate: gateId,
-                control: qubitIdx,
-                target: targetQubit,
-                column: colIdx
-              };
-              const cleanedOps = existingOps.filter(op =>
-                !(op.column === colIdx && (op.qubit === qubitIdx || op.qubit === targetQubit || op.control === qubitIdx || op.target === targetQubit))
-              );
+              const newOp = { id: `op-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, gate: gateId, control: qubitIdx, target: targetQubit, column: colIdx };
+              const cleanedOps = existingOps.filter(op => !(op.column === colIdx && (op.qubit === qubitIdx || op.qubit === targetQubit || op.control === qubitIdx || op.target === targetQubit)));
               cleanedOps.push(newOp);
               updateCircuitState({ ...circuit, operations: cleanedOps });
               setSelectedOpId(newOp.id);
             } else {
-              const newOp = {
-                id: `op-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-                gate: gateId,
-                qubit: qubitIdx,
-                column: colIdx
-              };
-              const cleanedOps = existingOps.filter(op =>
-                !(op.column === colIdx && (op.qubit === qubitIdx || op.control === qubitIdx || op.target === qubitIdx))
-              );
+              const newOp = { id: `op-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, gate: gateId, qubit: qubitIdx, column: colIdx };
+              const cleanedOps = existingOps.filter(op => !(op.column === colIdx && (op.qubit === qubitIdx || op.control === qubitIdx || op.target === qubitIdx)));
               cleanedOps.push(newOp);
               updateCircuitState({ ...circuit, operations: cleanedOps });
               setSelectedOpId(newOp.id);
@@ -334,11 +336,13 @@ export default function QuantumLab({
           canUndo={historyIndex > 0}
           canRedo={historyIndex < history.length - 1}
           onLoadPreset={() => setIsPresetsOpen(true)}
+          isRunning={isRunning}
         />
 
-        {/* Right: Bi-directional Qiskit Code Editor with Live CodeParser */}
+        {/* Right: Inspector / Code (Fixed Width) */}
         <CodeEditor
           circuit={circuit}
+          selectedOpId={selectedOpId}
           onResetCircuit={() => updateCircuitState(PRESET_CIRCUITS[0])}
           onCircuitUpdate={(newCircuit) => updateCircuitState(newCircuit)}
           onOpenQumi={onOpenQumi}
@@ -346,21 +350,25 @@ export default function QuantumLab({
 
       </div>
 
-      {/* Big Simulation Run Button */}
-      <div className="w-full">
-        <RunButton
-          onRun={handleRunSimulation}
-          isRunning={isRunning}
-          error={circuitError}
-        />
-      </div>
+      {/* Expandable Bottom Results Dock */}
+      <div 
+        className="shrink-0 flex flex-col bg-[#070919] border-t border-white/10 z-30 transition-[height] duration-75 ease-linear"
+        style={{ height: `${dockHeight}px` }}
+      >
+        {/* Resize Handle */}
+        <div 
+          className="h-1.5 w-full cursor-ns-resize hover:bg-cyan-500/50 active:bg-cyan-500 flex justify-center items-center group -mt-[3px] absolute z-40"
+          onMouseDown={() => setIsDragging(true)}
+        >
+          <div className="w-12 h-[3px] rounded-full bg-white/20 group-hover:bg-white/80" />
+        </div>
 
-      {/* Bottom: Results Panel (Probability Chart, State Vector, 3D Bloch Sphere) */}
-      <div className="w-full">
         <ResultsPanel
           results={results}
           circuit={circuit}
           isRunning={isRunning}
+          isCollapsed={dockHeight < 100}
+          onToggleCollapse={toggleDock}
         />
       </div>
 

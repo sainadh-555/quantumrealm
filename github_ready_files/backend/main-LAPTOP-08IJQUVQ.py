@@ -19,10 +19,18 @@ import urllib.request
 import urllib.error
 import re
 from dotenv import load_dotenv
+from openai import OpenAI
 
 load_dotenv()
-QUMI_MODEL = os.getenv("QUMI_MODEL", "llama3")
-OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434/api/chat")
+# You can set AI_BASE_URL to Groq's base url (https://api.groq.com/openai/v1) and AI_API_KEY to your Groq Key.
+# If not set, it defaults to OpenAI's standard API.
+client = OpenAI(
+    api_key=os.getenv("AI_API_KEY", os.getenv("OPENAI_API_KEY", "your-api-key-here")),
+    base_url=os.getenv("AI_BASE_URL", os.getenv("OPENAI_BASE_URL"))
+)
+# Use llama3-8b-8192 if using Groq, or gpt-4o-mini if using OpenAI.
+QUMI_MODEL = os.getenv("QUMI_MODEL", "llama3-8b-8192")
+
 
 # Try importing Qiskit
 try:
@@ -188,18 +196,6 @@ class QumiRequest(BaseModel):
 
 @app.post("/api/qumi")
 def ask_qumi(req: QumiRequest):
-    # Check if Ollama is running
-    try:
-        # Simple ping to see if Ollama responds
-        req_ping = urllib.request.Request(OLLAMA_API_URL.replace("/api/chat", ""), method="GET")
-        urllib.request.urlopen(req_ping, timeout=2)
-    except Exception:
-        return {
-            "type": "TEXT",
-            "content": "Qumi is offline because the local AI service (Ollama) is unavailable or not running. Please start your local AI provider.",
-            "action": None
-        }
-
     try:
         system_instruction = """You are Qumi, the intelligent quantum-computing assistant of Quantum Learn.
         You act as a Quantum Tutor, Circuit Analyst, Debugger, and Code Generator.
@@ -233,7 +229,7 @@ def ask_qumi(req: QumiRequest):
         if req.code:
             context_prompt += f"CURRENT CODE: {req.code}\n"
             
-        ollama_messages = [{"role": "system", "content": system_instruction}]
+        messages = [{"role": "system", "content": system_instruction}]
         
         for i, msg in enumerate(req.messages):
             role = "assistant" if msg.get("role") == "assistant" else "user"
@@ -242,25 +238,16 @@ def ask_qumi(req: QumiRequest):
             if i == len(req.messages) - 1 and role == "user":
                 content = context_prompt + "\nUSER MESSAGE:\n" + content
                 
-            ollama_messages.append({"role": role, "content": content})
+            messages.append({"role": role, "content": content})
             
-        payload = {
-            "model": QUMI_MODEL,
-            "messages": ollama_messages,
-            "stream": False,
-            "options": {
-                "temperature": 0.3
-            }
-        }
+        response = client.chat.completions.create(
+            model=QUMI_MODEL,
+            messages=messages,
+            temperature=0.3,
+            response_format={ "type": "json_object" }
+        )
         
-        data = json.dumps(payload).encode('utf-8')
-        headers = {'Content-Type': 'application/json'}
-        http_req = urllib.request.Request(OLLAMA_API_URL, data=data, headers=headers)
-        
-        with urllib.request.urlopen(http_req, timeout=45) as response:
-            result = json.loads(response.read().decode('utf-8'))
-            
-        text_resp = result.get('message', {}).get('content', '')
+        text_resp = response.choices[0].message.content
         
         # Robust JSON extraction
         json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text_resp, re.DOTALL)
@@ -282,14 +269,14 @@ def ask_qumi(req: QumiRequest):
         print(f"Qumi JSON Parse Error: {e}")
         return {
             "type": "TEXT",
-            "content": f"The local AI model returned an invalid structure. Please try asking again.",
+            "content": f"The AI model returned an invalid JSON structure. Please try asking again.",
             "action": None
         }
     except Exception as e:
         print(f"Qumi AI Error: {e}")
         return {
             "type": "TEXT",
-            "content": f"Qumi is offline because the local AI model '{QUMI_MODEL}' encountered an error. ({str(e)})",
+            "content": f"Qumi is offline because the AI API encountered an error. Check your API key. ({str(e)})",
             "action": None
         }
 

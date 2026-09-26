@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import { Info, BarChart3 } from 'lucide-react';
 
-export default function ProbabilityChart({ probabilities = {}, counts = {}, shots = 1024 }) {
+export default function ProbabilityChart({ probabilities = {}, counts = {}, shots = 1024, aiInsight = null }) {
   const chartData = Object.keys(probabilities).map((state) => ({
     state: `|${state}⟩`,
     probability: (probabilities[state] * 100).toFixed(1),
@@ -17,12 +17,27 @@ export default function ProbabilityChart({ probabilities = {}, counts = {}, shot
     <div className="w-full flex flex-col space-y-4">
       
       {/* Top Banner / Explanation */}
-      <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs flex items-center space-x-2.5">
-        <Info className="w-4 h-4 text-cyan-400 shrink-0" />
-        <span>
-          Measurement probabilities show how likely each computational basis state is to be observed after <strong>{shots}</strong> shots.
-        </span>
+      <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs flex items-center justify-between">
+        <div className="flex items-center space-x-2.5">
+          <Info className="w-4 h-4 text-cyan-400 shrink-0" />
+          <span>
+            Measurement probabilities after <strong>{shots}</strong> shots.
+          </span>
+        </div>
       </div>
+
+      {/* AI Insight (What happened?) */}
+      {aiInsight && (
+        <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/30 shadow-inner flex space-x-3 items-start animate-in fade-in slide-in-from-top-2 duration-500">
+          <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-500/40">
+            <Sparkles className="w-4 h-4 text-purple-400" />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-purple-300 font-['Space_Grotesk'] mb-1">AI INSIGHT: What happened?</h4>
+            <p className="text-sm text-gray-300 leading-relaxed font-sans">{aiInsight}</p>
+          </div>
+        </div>
+      )}
 
       {/* Recharts Bar Chart */}
       <div className="h-64 w-full bg-[#080b1e]/60 rounded-xl p-4 border border-white/5">
@@ -68,15 +83,21 @@ export default function ProbabilityChart({ probabilities = {}, counts = {}, shot
         )}
       </div>
 
-      {/* Basis States Table */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {/* Animated Probability Bars (Basis States Table) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {chartData.map((d, i) => (
-          <div key={i} className="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
-            <span className="font-mono text-cyan-300 font-bold text-xs">{d.state}</span>
-            <div className="text-right">
-              <div className="font-mono text-white text-xs font-semibold">{d.probability}%</div>
-              <div className="text-[10px] text-gray-400 font-mono">{d.count} shots</div>
+          <div key={i} className="p-3 rounded-xl bg-white/5 border border-white/10 flex flex-col space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-cyan-300 font-bold text-sm">{d.state}</span>
+              <div className="font-mono text-white text-sm font-semibold">{d.probability}%</div>
             </div>
+            <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
+              <div 
+                className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-1000 ease-out" 
+                style={{ width: `${d.probability}%` }} 
+              />
+            </div>
+            <div className="text-[10px] text-gray-400 font-mono text-right">{d.count} shots</div>
           </div>
         ))}
       </div>

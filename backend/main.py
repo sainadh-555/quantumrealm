@@ -19,18 +19,16 @@ import urllib.request
 import urllib.error
 import re
 from dotenv import load_dotenv
+
 from openai import OpenAI
 
 load_dotenv()
-# You can set AI_BASE_URL to Groq's base url (https://api.groq.com/openai/v1) and AI_API_KEY to your Groq Key.
-# If not set, it defaults to OpenAI's standard API.
-client = OpenAI(
-    api_key=os.getenv("AI_API_KEY", os.getenv("OPENAI_API_KEY", "your-api-key-here")),
-    base_url=os.getenv("AI_BASE_URL", os.getenv("OPENAI_BASE_URL"))
-)
-# Use llama3-8b-8192 if using Groq, or gpt-4o-mini if using OpenAI.
-QUMI_MODEL = os.getenv("QUMI_MODEL", "llama3-8b-8192")
+QUMI_MODEL = os.getenv("QUMI_MODEL", "gpt-4o-mini")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+# Initialize OpenAI Client
+# Note: In production, the API key is automatically picked up from os.environ["OPENAI_API_KEY"]
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # Try importing Qiskit
 try:
@@ -54,7 +52,7 @@ app = FastAPI(
 # Enable CORS for local Vite dev server (http://localhost:3000)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000", "https://sainadh-555.github.io"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -196,27 +194,26 @@ class QumiRequest(BaseModel):
 
 @app.post("/api/qumi")
 def ask_qumi(req: QumiRequest):
+    if not OPENAI_API_KEY:
+        return {
+            "message": "Qumi service configuration error: OPENAI_API_KEY is not set on the backend.",
+            "toolActions": [],
+            "metadata": {"provider": "none", "model": "none"}
+        }
+
     try:
-        system_instruction = """You are Qumi, the intelligent quantum-computing assistant of Quantum Learn.
-        You act as a Quantum Tutor, Circuit Analyst, Debugger, and Code Generator.
-        You MUST NEVER act like a generic chatbot. You MUST ground your answers in the provided CURRENT CIRCUIT and SIMULATION RESULTS.
-        
-        CRITICAL RULES:
-        1. Always output EXACTLY valid JSON and nothing else. Do not output markdown blocks around the JSON unless strictly necessary.
-        2. The JSON MUST match this exact schema:
-           {
-             "type": "TEXT" | "ACTION",
-             "content": "Your markdown-formatted explanation here",
-             "action": {
-                 "type": "circuit" | "run_simulation" | "add_qubit" | "measure",
-                 "label": "Action button label",
-                 "circuitData": { ... } // Only if type is circuit
-             } | null
-           }
-        3. Never hallucinate circuit properties. If the circuit doesn't exist, tell the user to build one.
-        4. When generating a circuit, `circuitData` must contain: `{"qubits": int, "classicalBits": int, "columns": int, "operations": [{"id": "op-1", "gate": "H", "qubit": 0, "column": 0}, ...]}`
-        """
-        
+        system_instruction = """You are Qumi, the Quantum Tutor inside Quantum Relum.
+Your domain is:
+- quantum computing, quantum circuits, qubits, superposition, entanglement, measurement, quantum gates, quantum algorithms, quantum simulation, Qiskit, state vectors, probabilities, Bloch sphere, quantum error correction, quantum hardware concepts, and mathematics directly relevant to quantum computing.
+
+For non-quantum questions (like weather, Java, sports, history), politely state that the topic is outside your domain and redirect the user toward quantum computing. Example: "That's outside my domain. I'm Qumi, your Quantum Tutor. Ask me about quantum computing, circuits, gates, algorithms, Qiskit, or your current simulation."
+
+If the user asks to analyze their circuit, you can use the 'analyze_current_circuit' tool or just look at the injected context if available.
+If the user asks to build or modify a circuit, call the appropriate tool (e.g. 'create_circuit'). 
+Do not invent simulation results. If there are no results, tell the user to run the simulation first.
+You are educational, clear, and beginner-friendly."""
+
+        # Inject context into the prompt
         context_prompt = f"CURRENT APPLICATION STATE:\n"
         if req.circuit and req.circuit.get('operations'):
             context_prompt += f"CIRCUIT: {json.dumps(req.circuit)}\n"
@@ -229,54 +226,97 @@ def ask_qumi(req: QumiRequest):
         if req.code:
             context_prompt += f"CURRENT CODE: {req.code}\n"
             
-        messages = [{"role": "system", "content": system_instruction}]
+        openai_messages = [{"role": "system", "content": system_instruction}]
         
+        # Add conversation history
         for i, msg in enumerate(req.messages):
             role = "assistant" if msg.get("role") == "assistant" else "user"
             content = msg.get("content", "")
             
+            # If it's a tool result from the frontend, format it as a system or user message
+            if msg.get("role") == "tool":
+                role = "user"
+                content = f"[System: Tool execution result] {content}"
+                
             if i == len(req.messages) - 1 and role == "user":
                 content = context_prompt + "\nUSER MESSAGE:\n" + content
                 
-            messages.append({"role": role, "content": content})
-            
+            openai_messages.append({"role": role, "content": content})
+
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "create_circuit",
+                    "description": "Create a new quantum circuit, completely replacing the current one.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "qubits": {"type": "integer", "description": "Number of qubits in the circuit"},
+                            "gates": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {"type": "string", "description": "Gate type (e.g. H, CX, X, MEASURE)"},
+                                        "qubits": {"type": "array", "items": {"type": "integer"}, "description": "Target qubits (e.g. [0] or [0, 1] for CNOT)"},
+                                        "column": {"type": "integer", "description": "The time step column for the gate (0-indexed)"}
+                                    },
+                                    "required": ["type", "qubits", "column"]
+                                }
+                            }
+                        },
+                        "required": ["qubits", "gates"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "add_gate",
+                    "description": "Add a single quantum gate to the current circuit.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "type": {"type": "string", "description": "Gate type (e.g. H, CX, X, MEASURE)"},
+                            "qubits": {"type": "array", "items": {"type": "integer"}, "description": "Target qubits (e.g. [0] or [0, 1] for CNOT)"},
+                            "column": {"type": "integer", "description": "Optional: Specific column to place the gate. If omitted, places at the end."}
+                        },
+                        "required": ["type", "qubits"]
+                    }
+                }
+            }
+        ]
+
         response = client.chat.completions.create(
             model=QUMI_MODEL,
-            messages=messages,
-            temperature=0.3,
-            response_format={ "type": "json_object" }
+            messages=openai_messages,
+            tools=tools,
+            temperature=0.7,
+            max_tokens=800
         )
         
-        text_resp = response.choices[0].message.content
+        message = response.choices[0].message
         
-        # Robust JSON extraction
-        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text_resp, re.DOTALL)
-        if json_match:
-            text_resp = json_match.group(1)
-        else:
-            text_resp = text_resp.strip()
-            # Failsafe if the model forgot markdown blocks but output pure JSON
-            if not text_resp.startswith("{"):
-                # Try to extract anything looking like JSON
-                alt_match = re.search(r'\{.*\}', text_resp, re.DOTALL)
-                if alt_match:
-                    text_resp = alt_match.group(0)
+        tool_actions = []
+        if message.tool_calls:
+            for tool_call in message.tool_calls:
+                tool_actions.append({
+                    "name": tool_call.function.name,
+                    "arguments": json.loads(tool_call.function.arguments)
+                })
 
-        structured_response = json.loads(text_resp)
-        return structured_response
-
-    except json.JSONDecodeError as e:
-        print(f"Qumi JSON Parse Error: {e}")
         return {
-            "type": "TEXT",
-            "content": f"The AI model returned an invalid JSON structure. Please try asking again.",
-            "action": None
+            "message": message.content or "",
+            "toolActions": tool_actions,
+            "metadata": {
+                "provider": "openai",
+                "model": QUMI_MODEL,
+                "requestId": response.id
+            }
         }
+
     except Exception as e:
-        print(f"Qumi AI Error: {e}")
-        return {
-            "type": "TEXT",
-            "content": f"Qumi is offline because the AI API encountered an error. Check your API key. ({str(e)})",
-            "action": None
-        }
+        print(f"[QUMI ERROR] {e}")
+        raise HTTPException(status_code=500, detail="Qumi is temporarily unavailable. Please try again.")
 

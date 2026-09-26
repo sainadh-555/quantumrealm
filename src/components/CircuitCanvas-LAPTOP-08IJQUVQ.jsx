@@ -3,6 +3,7 @@ import QubitWire from './QubitWire';
 import {
   Plus, Minus, RotateCcw, Trash2, Undo2, Redo2, Sparkles, Cpu, Layers
 } from 'lucide-react';
+import { QUANTUM_GATES } from '../data/quantumGates';
 
 export default function CircuitCanvas({
   circuit,
@@ -71,7 +72,7 @@ export default function CircuitCanvas({
 
   return (
     <div
-      className="flex-1 flex flex-col glass-panel rounded-2xl border border-white/10 overflow-hidden bg-[#070a1b]/90 shadow-2xl"
+      className="flex-1 flex flex-col bg-[#0b0e1b] border-x border-white/5 relative z-0 overflow-hidden"
       onClick={() => onSelectOp && onSelectOp(null)}
     >
       
@@ -196,16 +197,16 @@ export default function CircuitCanvas({
       <div className="flex-1 p-5 overflow-x-auto relative min-h-[260px] bg-quantum-grid bg-repeat select-none">
         
         {/* Column Headers */}
-        <div className="flex items-center mb-2">
+        <div className="flex items-center mb-2 w-max min-w-full">
           {/* Offset spacer matching label width */}
-          <div className="w-16 sm:w-20 shrink-0 pr-3"></div>
+          <div className="w-16 sm:w-20 shrink-0 pr-3 sticky left-0 z-20 bg-[#0b0e1b]"></div>
           {/* Header Grid */}
           <div
             className="flex-1 grid text-center font-mono text-[10px] text-gray-500"
-            style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+            style={{ gridTemplateColumns: `repeat(${columns}, minmax(64px, 1fr))` }}
           >
             {Array.from({ length: columns }).map((_, cIdx) => (
-              <div key={cIdx} className="w-full">
+              <div key={cIdx} className="w-[56px] mx-auto flex items-center justify-center">
                 Col {cIdx + 1}
               </div>
             ))}
@@ -213,12 +214,12 @@ export default function CircuitCanvas({
         </div>
 
         {/* Qubit Wire Rows & Overlays Container */}
-        <div className="relative">
+        <div className="relative w-max min-w-full">
           
           {/* Vertical Glowing Lines for Controlled Gates (CNOT / CZ) */}
           <div className="absolute inset-0 flex pointer-events-none z-10">
             {/* Offset spacer */}
-            <div className="w-16 sm:w-20 shrink-0 pr-3"></div>
+            <div className="w-16 sm:w-20 shrink-0 pr-3 sticky left-0 z-20"></div>
             {/* Overlay grid matching wire columns */}
             <div className="flex-1 relative h-full">
               {verticalConnections.map(conn => {
@@ -264,13 +265,7 @@ export default function CircuitCanvas({
 
         </div>
 
-        {/* Selected Gate Hint Bar */}
-        {selectedOpId && (
-          <div className="mt-4 flex items-center justify-between px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-gray-400 animate-fadeIn">
-            <span>Gate selected in circuit</span>
-            <span className="text-cyan-400">Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/20 text-white font-bold">Backspace</kbd> or <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/20 text-white font-bold">Delete</kbd> to remove</span>
-          </div>
-        )}
+
 
       </div>
 

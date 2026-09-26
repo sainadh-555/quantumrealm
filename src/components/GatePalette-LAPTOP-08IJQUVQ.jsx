@@ -18,9 +18,9 @@ export default function GatePalette({ selectedGate, onSelectGate, onExplainGate 
 
   return (
     <aside
-      className={`glass-panel border-r border-white/10 flex flex-col transition-all duration-300 ${
-        collapsed ? 'w-16' : 'w-72 sm:w-80'
-      } h-full overflow-hidden`}
+      className={`border-r border-white/10 flex flex-col transition-all duration-300 ${
+        collapsed ? 'w-16' : 'w-72 sm:w-80 shrink-0'
+      } h-full overflow-hidden bg-[#070918]`}
     >
       {/* Header */}
       <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">

@@ -34,6 +34,9 @@ jobs:
         
       - name: Build project
         run: npm run build
+        env:
+          # TODO: Replace this URL with your actual deployed backend URL (e.g., from Render)
+          VITE_API_URL: "https://quantumrealm.onrender.com"
         
       - name: Setup Pages
         uses: actions/configure-pages@v4

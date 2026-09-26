@@ -60,8 +60,8 @@ export default function LearningHub({
         </p>
 
         {/* Difficulty Filter Tabs */}
-        <div className="inline-flex items-center p-1 rounded-2xl bg-white/[0.04] border border-white/10 mt-2">
-          {['All', 'Beginner', 'Intermediate', 'Advanced'].map(diff => (
+        <div className="inline-flex items-center p-1 rounded-2xl bg-white/[0.04] border border-white/10 mt-2 flex-wrap justify-center gap-1">
+          {['All', 'Beginner', 'Intermediate', 'Advanced', 'Coding Challenges'].map(diff => (
             <button
               key={diff}
               onClick={() => setSelectedDifficulty(diff)}
@@ -77,99 +77,131 @@ export default function LearningHub({
         </div>
       </div>
 
-      {/* Concept Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredConcepts.map((concept) => {
-          const isUnlocked = unlockedConcepts.includes(concept.id);
-
-          const diffColors = {
-            Beginner: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
-            Intermediate: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30',
-            Advanced: 'bg-purple-500/10 text-purple-300 border-purple-500/30'
-          };
-
-          return (
-            <div
-              key={concept.id}
-              className="p-6 rounded-3xl bg-[#080b20]/90 border border-white/10 hover:border-cyan-500/40 transition-all duration-300 flex flex-col justify-between shadow-xl shadow-black/40 hover:-translate-y-1 group"
-            >
+      {/* Concept Cards Grid or Challenges Grid */}
+      {selectedDifficulty === 'Coding Challenges' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[
+            { id: 'chal_bell', title: 'Create a Bell State', description: 'Use Hadamard and CNOT gates to create maximum entanglement.', difficulty: 'Beginner', xp: 50 },
+            { id: 'chal_grover', title: 'Implement Grover Search', description: 'Construct a 2-qubit Grover iteration to find state |11>.', difficulty: 'Advanced', xp: 150 },
+            { id: 'chal_teleport', title: 'Quantum Teleportation', description: 'Teleport a quantum state from q0 to q2 using entanglement.', difficulty: 'Intermediate', xp: 100 }
+          ].map(challenge => (
+            <div key={challenge.id} className="p-6 rounded-3xl bg-[#080b20]/90 border border-purple-500/20 hover:border-purple-500/50 transition-all flex flex-col justify-between shadow-xl">
               <div>
-                {/* Card Top Pill & Category */}
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full border ${diffColors[concept.difficulty] || diffColors.Beginner}`}>
-                      {concept.difficulty}
-                    </span>
-                    <span className="text-[10px] font-mono text-gray-400">
-                      {concept.category}
-                    </span>
-                  </div>
-
+                  <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300">
+                    Challenge - {challenge.difficulty}
+                  </span>
                   <div className="flex items-center space-x-1 font-mono text-xs text-amber-300">
                     <Zap className="w-3.5 h-3.5 text-amber-400" />
-                    <span>+{concept.xp} XP</span>
+                    <span>+{challenge.xp} XP</span>
                   </div>
                 </div>
-
-                {/* Concept Title */}
-                <h3 className="text-lg font-bold text-white font-['Space_Grotesk'] group-hover:text-cyan-300 transition-colors mb-2">
-                  {concept.name}
-                </h3>
-
-                {/* Simple Explanation */}
-                <p className="text-xs text-gray-300 leading-relaxed font-sans mb-5">
-                  {concept.description}
-                </p>
-
-                {/* Meta: Time & Unlock Status */}
-                <div className="flex items-center justify-between text-[11px] font-mono text-gray-400 mb-6 pb-4 border-b border-white/5">
-                  <div className="flex items-center space-x-1.5">
-                    <Clock className="w-3.5 h-3.5 text-gray-500" />
-                    <span>Est. {concept.estimatedTime}</span>
-                  </div>
-                  {isUnlocked && (
-                    <span className="flex items-center gap-1 text-emerald-400 text-[10px] font-semibold">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>UNLOCKED</span>
-                    </span>
-                  )}
-                </div>
+                <h3 className="text-lg font-bold text-white font-['Space_Grotesk'] mb-2">{challenge.title}</h3>
+                <p className="text-xs text-gray-300 leading-relaxed font-sans mb-5">{challenge.description}</p>
               </div>
-
-              {/* Action Buttons: [Learn Concept] [Practice] [Play] */}
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => setActiveLearnModal(concept)}
-                  className="py-2 px-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 text-xs font-semibold flex items-center justify-center space-x-1 border border-white/10 transition-colors"
-                  title="Read in-depth theoretical concept"
-                >
-                  <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
-                  <span className="text-[11px]">Learn</span>
-                </button>
-
-                <button
-                  onClick={() => handleStartPractice(concept.id)}
-                  className="py-2 px-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-semibold flex items-center justify-center space-x-1 border border-purple-500/30 transition-colors"
-                  title="Test knowledge with an interactive question"
-                >
-                  <HelpCircle className="w-3.5 h-3.5 text-purple-400" />
-                  <span className="text-[11px]">Practice</span>
-                </button>
-
-                <button
-                  onClick={() => onPlayConcept(concept.id)}
-                  className="py-2 px-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black text-xs font-bold flex items-center justify-center space-x-1 transition-all shadow-md shadow-cyan-500/20"
-                  title="Encounter this concept inside Quantum Rush runner"
-                >
-                  <Play className="w-3.5 h-3.5 fill-black" />
-                  <span className="text-[11px]">Play</span>
-                </button>
-              </div>
-
+              <button 
+                onClick={() => onExploreInLab('custom')} // Opening lab in custom mode for challenges
+                className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-2"
+              >
+                <FlaskConical className="w-4 h-4" /> Start Challenge
+              </button>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredConcepts.map((concept) => {
+            const isUnlocked = unlockedConcepts.includes(concept.id);
+
+            const diffColors = {
+              Beginner: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+              Intermediate: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30',
+              Advanced: 'bg-purple-500/10 text-purple-300 border-purple-500/30'
+            };
+
+            return (
+              <div
+                key={concept.id}
+                className="p-6 rounded-3xl bg-[#080b20]/90 border border-white/10 hover:border-cyan-500/40 transition-all duration-300 flex flex-col justify-between shadow-xl shadow-black/40 hover:-translate-y-1 group"
+              >
+                <div>
+                  {/* Card Top Pill & Category */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full border ${diffColors[concept.difficulty] || diffColors.Beginner}`}>
+                        {concept.difficulty}
+                      </span>
+                      <span className="text-[10px] font-mono text-gray-400">
+                        {concept.category}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-1 font-mono text-xs text-amber-300">
+                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      <span>+{concept.xp} XP</span>
+                    </div>
+                  </div>
+
+                  {/* Concept Title */}
+                  <h3 className="text-lg font-bold text-white font-['Space_Grotesk'] group-hover:text-cyan-300 transition-colors mb-2">
+                    {concept.name}
+                  </h3>
+
+                  {/* Simple Explanation */}
+                  <p className="text-xs text-gray-300 leading-relaxed font-sans mb-5">
+                    {concept.description}
+                  </p>
+
+                  {/* Meta: Time & Unlock Status */}
+                  <div className="flex items-center justify-between text-[11px] font-mono text-gray-400 mb-6 pb-4 border-b border-white/5">
+                    <div className="flex items-center space-x-1.5">
+                      <Clock className="w-3.5 h-3.5 text-gray-500" />
+                      <span>Est. {concept.estimatedTime}</span>
+                    </div>
+                    {isUnlocked && (
+                      <span className="flex items-center gap-1 text-emerald-400 text-[10px] font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>UNLOCKED</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons: [Learn Concept] [Practice] [Play] */}
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setActiveLearnModal(concept)}
+                    className="py-2 px-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 text-xs font-semibold flex items-center justify-center space-x-1 border border-white/10 transition-colors"
+                    title="Read in-depth theoretical concept"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+                    <span className="text-[11px]">Learn</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleStartPractice(concept.id)}
+                    className="py-2 px-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-semibold flex items-center justify-center space-x-1 border border-purple-500/30 transition-colors"
+                    title="Test knowledge with an interactive question"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5 text-purple-400" />
+                    <span className="text-[11px]">Practice</span>
+                  </button>
+
+                  <button
+                    onClick={() => onPlayConcept(concept.id)}
+                    className="py-2 px-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black text-xs font-bold flex items-center justify-center space-x-1 transition-all shadow-md shadow-cyan-500/20"
+                    title="Encounter this concept inside Quantum Rush runner"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-black" />
+                    <span className="text-[11px]">Play</span>
+                  </button>
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Learn Concept Details Modal */}
       {activeLearnModal && (
