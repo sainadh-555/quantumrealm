@@ -337,7 +337,7 @@ export default function Learning3D({ onNavigateBack, onOpenInLab }) {
               <span className="text-emerald-400 font-bold">{(prob0 * 100).toFixed(1)}%</span>
             </div>
             <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-400 transition-all duration-300" style={{ width: \`\${prob0 * 100}%\` }} />
+              <div className="h-full bg-emerald-400 transition-all duration-300" style={{ width: `${prob0 * 100}%` }} />
             </div>
 
             <div className="flex justify-between items-center text-xs font-mono mt-3">
@@ -345,7 +345,7 @@ export default function Learning3D({ onNavigateBack, onOpenInLab }) {
               <span className="text-rose-400 font-bold">{(prob1 * 100).toFixed(1)}%</span>
             </div>
             <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-              <div className="h-full bg-rose-400 transition-all duration-300" style={{ width: \`\${prob1 * 100}%\` }} />
+              <div className="h-full bg-rose-400 transition-all duration-300" style={{ width: `${prob1 * 100}%` }} />
             </div>
           </div>
 
