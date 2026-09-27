@@ -35,7 +35,7 @@ if GROK_API_KEY and GROK_API_KEY.startswith("gsk_"):
         base_url="https://api.groq.com/openai/v1"
     )
     if os.getenv("QUMI_MODEL") is None:
-        QUMI_MODEL = "llama3-70b-8192"
+        QUMI_MODEL = "llama-3.1-8b-instant"
 elif GROK_API_KEY:
     client = OpenAI(
         api_key=GROK_API_KEY,
