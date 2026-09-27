@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
-QUMI_MODEL = os.getenv("QUMI_MODEL", "gpt-4o-mini")
+QUMI_MODEL = os.getenv("QUMI_MODEL", "gpt-4o-mini").strip()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GROK_API_KEY = os.getenv("GROK_API_KEY")
 
