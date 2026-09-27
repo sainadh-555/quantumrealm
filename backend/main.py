@@ -26,6 +26,8 @@ load_dotenv()
 QUMI_MODEL = os.getenv("QUMI_MODEL", "gpt-4o-mini").strip()
 AI_API_KEY = os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("GROK_API_KEY")
 AI_BASE_URL = os.getenv("AI_BASE_URL")
+if AI_BASE_URL and AI_BASE_URL.endswith("/chat/completions"):
+    AI_BASE_URL = AI_BASE_URL.replace("/chat/completions", "")
 
 # Initialize Client
 if AI_API_KEY:
@@ -393,9 +395,9 @@ You have access to the user's live application state. You can also trigger UI ac
     except Exception as e:
         error_msg = str(e).lower()
         if "404" in error_msg or "model_not_found" in error_msg or "does not exist" in error_msg:
-            print(f"[QUMI ERROR] Provider rejected model: {QUMI_MODEL}")
-            raise HTTPException(status_code=503, detail="QUMI_MODEL_UNAVAILABLE")
+            print(f"[QUMI ERROR] Provider rejected model: {QUMI_MODEL}. Raw error: {str(e)}")
+            raise HTTPException(status_code=503, detail=f"QUMI_MODEL_UNAVAILABLE: {str(e)} (Model requested: {QUMI_MODEL})")
             
         print(f"[QUMI ERROR] API request failed: {str(e)}")
-        raise HTTPException(status_code=500, detail="QUMI_SERVICE_ERROR")
+        raise HTTPException(status_code=500, detail=f"QUMI_SERVICE_ERROR: {str(e)}")
 
