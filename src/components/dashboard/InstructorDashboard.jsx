@@ -37,7 +37,7 @@ export default function InstructorDashboard() {
               Instructor Dashboard
             </h1>
             <p className="text-gray-400 mt-2 font-mono text-sm">
-              Quantum Relum Class Analytics & Performance Tracking
+              Quantum Realm Class Analytics & Performance Tracking
             </p>
           </div>
           <button className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 text-sm font-mono transition-colors">

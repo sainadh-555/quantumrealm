@@ -20,7 +20,7 @@ export default function LandingPage({ onSelectWorkspace }) {
           </div>
           <div>
             <h1 className="text-4xl md:text-5xl font-black tracking-wider bg-gradient-to-r from-cyan-400 via-blue-300 to-purple-400 bg-clip-text text-transparent uppercase font-['Space_Grotesk']">
-              QUANTUM RELUM
+              QUANTUM REALM
             </h1>
             <p className="text-xs md:text-sm text-gray-400 font-mono mt-2 tracking-widest uppercase">
               NEURAL NOMADS
