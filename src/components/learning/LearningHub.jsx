@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { QUANTUM_CONCEPTS } from '../../data/quantumConcepts';
+import { CODING_CHALLENGES } from '../../data/codingChallenges';
 import { ProgressService } from '../../services/ProgressService';
 import { QuestionService } from '../../services/QuestionService';
 import {
@@ -169,6 +170,46 @@ export default function LearningHub({
             </div>
           );
         })}
+      </div>
+
+      {/* Coding Challenges Section */}
+      <div className="mt-16 border-t border-white/10 pt-12">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/30">
+            <FlaskConical className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white font-['Space_Grotesk']">Quantum Coding Challenges</h2>
+            <p className="text-sm text-gray-400">Put theory into practice by writing and running actual circuits.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {CODING_CHALLENGES.map((challenge) => (
+            <div key={challenge.id} className="p-6 rounded-3xl bg-[#0a0718] border border-amber-500/20 hover:border-amber-500/50 transition-all flex flex-col group relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-[50px] rounded-full pointer-events-none group-hover:bg-amber-500/20 transition-all" />
+              
+              <div className="flex justify-between items-start mb-4 relative z-10">
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                  {challenge.difficulty}
+                </span>
+                <span className="flex items-center gap-1 font-mono text-xs text-emerald-400">
+                  <Zap className="w-3.5 h-3.5" /> +{challenge.xp} XP
+                </span>
+              </div>
+              
+              <h3 className="text-lg font-bold text-white mb-2 relative z-10 font-['Space_Grotesk'] group-hover:text-amber-300 transition-colors">{challenge.title}</h3>
+              <p className="text-xs text-gray-400 leading-relaxed mb-6 flex-1 relative z-10">{challenge.description}</p>
+              
+              <button 
+                onClick={() => onStartChallenge && onStartChallenge(challenge)}
+                className="w-full py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all group-hover:shadow-[0_0_15px_rgba(245,158,11,0.2)] relative z-10"
+              >
+                Start Challenge <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Learn Concept Details Modal */}

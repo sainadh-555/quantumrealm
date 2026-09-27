@@ -18,6 +18,7 @@ export default function SimulationWorkspace({
   activeTool,
   setActiveTool,
   initialConcept,
+  activeChallenge,
   onCircuitUpdate,
   onNavigateTo3D
 }) {
@@ -127,6 +128,16 @@ export default function SimulationWorkspace({
     }
   };
 
+  const handleCheckChallenge = () => {
+    if (!activeChallenge) return;
+    if (activeChallenge.validate(circuit)) {
+      alert(`Challenge Complete! +${activeChallenge.xp} XP`);
+      ProgressService.addXP(activeChallenge.xp, `Completed Challenge: ${activeChallenge.title}`);
+    } else {
+      setCircuitError('Circuit does not meet challenge requirements. Try again!');
+    }
+  };
+
   // ALGORITHMS TAKEOVER
   if (activeTool === 'algorithms') {
     return (
@@ -142,14 +153,22 @@ export default function SimulationWorkspace({
       
       {/* Top action row */}
       <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-4 shrink-0">
-        <div className="flex flex-col">
+        <div className="flex flex-col max-w-xl">
           <h2 className="text-xl font-bold font-['Space_Grotesk'] text-white flex items-center gap-3">
             QUANTUM LAB
-            <span className="text-xs font-normal text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded-full border border-cyan-500/20">
-              {initialConcept ? initialConcept.charAt(0).toUpperCase() + initialConcept.slice(1) : 'Custom Circuit'}
-            </span>
+            {activeChallenge ? (
+              <span className="text-xs font-bold text-amber-400 bg-amber-900/30 px-3 py-1 rounded-full border border-amber-500/30 uppercase tracking-wider shadow-sm shadow-amber-500/20">
+                CHALLENGE: {activeChallenge.title}
+              </span>
+            ) : (
+              <span className="text-xs font-normal text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded-full border border-cyan-500/20">
+                {initialConcept ? initialConcept.charAt(0).toUpperCase() + initialConcept.slice(1) : 'Custom Circuit'}
+              </span>
+            )}
           </h2>
-          <span className="text-xs text-gray-500 mt-1">Build the concept. See the quantum state.</span>
+          <span className="text-xs text-gray-400 mt-1.5 leading-relaxed">
+            {activeChallenge ? activeChallenge.description : 'Build the concept. See the quantum state.'}
+          </span>
         </div>
 
         <div className="flex items-center gap-6">
@@ -189,6 +208,15 @@ export default function SimulationWorkspace({
             >
               <span className="text-sm font-medium">PRESETS</span>
             </button>
+
+            {activeChallenge && (
+              <button
+                onClick={handleCheckChallenge}
+                className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/50 text-amber-300 hover:bg-amber-500/30 transition-colors shadow-[0_0_15px_rgba(245,158,11,0.2)] font-bold font-['Space_Grotesk'] tracking-wider"
+              >
+                CHECK
+              </button>
+            )}
 
             <RunButton onRun={handleRunSimulation} isRunning={isRunning} error={circuitError} />
           </div>

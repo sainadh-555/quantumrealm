@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { ProgressService, BADGE_DEFINITIONS } from '../../services/ProgressService';
 
-export default function StudentDashboard({ isOpen, onClose }) {
+export default function StudentDashboard({ isOpen, onClose, onJumpToLab }) {
   const [studentProgress, setStudentProgress] = useState(ProgressService.getState());
 
   useEffect(() => {
@@ -83,13 +83,21 @@ export default function StudentDashboard({ isOpen, onClose }) {
               <div className="text-xs text-gray-400">Days active</div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col gap-2">
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col gap-3">
               <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs">
                 <Bot className="w-4 h-4" /> QUMI SAYS
               </div>
               <div className="text-sm font-medium text-emerald-300 leading-tight">
-                "Keep practicing Quantum Gates to master superposition!"
+                "{ProgressService.getSmartRecommendation().text}"
               </div>
+              {onJumpToLab && (
+                <button
+                  onClick={() => onJumpToLab(ProgressService.getSmartRecommendation().target)}
+                  className="mt-1 px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold self-start flex items-center gap-1.5 transition-colors"
+                >
+                  <Zap className="w-3.5 h-3.5" /> Practice in Lab
+                </button>
+              )}
             </div>
           </div>
 

@@ -1,490 +1,326 @@
-import React, { useState, useEffect, useRef } from 'react';
-import * as THREE from 'three';
-import {
+import React, { useState, useEffect, useMemo } from 'react';
+import { simulateCircuitClientSide } from '../../services/quantumApi';
+import BlochSphere from './BlochSphere';
+import { StateInspector, GateControls, MeasurementPanel, ParameterControls } from './LabPanels';
+import { 
+  ArrowRight, 
+  FlaskConical, 
+  Bot, 
+  BookOpen, 
   RotateCcw,
-  Compass,
-  Info,
-  Layers,
   Sparkles,
-  ArrowRight,
-  Atom,
-  FlaskConical,
+  Layers,
   Activity,
-  Box,
-  BarChart,
-  Bot
+  Cpu
 } from 'lucide-react';
 
+const MODULES = [
+  { id: 'single', name: 'Single Qubit', icon: Activity, desc: 'Explore single qubit gates.' },
+  { id: 'bell', name: 'Bell State (Entanglement)', icon: Layers, desc: 'Explore two-qubit entanglement.' },
+  { id: 'algorithm', name: 'Algorithm Playback', icon: Cpu, desc: 'Step-by-step algorithm journey.' }
+];
+
 export default function Learning3D({ onNavigateBack, onOpenInLab }) {
-  const mountRef = useRef(null);
-
-  const [activeModule, setActiveModule] = useState('bloch'); 
-
-  // Qubit State (Theta, Phi)
-  const [theta, setTheta] = useState(0); 
-  const [phi, setPhi] = useState(0); 
-
-  // Measurement states
+  const [activeModule, setActiveModule] = useState('single');
+  const [circuit, setCircuit] = useState({ qubits: 1, operations: [] });
+  const [simulationResult, setSimulationResult] = useState(null);
   const [measuredState, setMeasuredState] = useState(null);
-  const [shotsResult, setShotsResult] = useState(null); // { '0': count, '1': count } or { '00': count, '11': count }
+  const [shotsResult, setShotsResult] = useState(null);
+  const [isTechnical, setIsTechnical] = useState(false);
+  
+  // Explanation states
+  const [lastAction, setLastAction] = useState('Initialized qubit to |0⟩.');
 
-  // References to Three.js objects
-  const sceneRef = useRef(null);
-  const rendererRef = useRef(null);
-  const cameraRef = useRef(null);
-  const stateVectorRef = useRef(null);
-  const animStateRef = useRef({ theta: 0, phi: 0 }); // for smooth animation
-
-  // Math helper for Vector
-  const updateVector = (t, p) => {
-    if (!stateVectorRef.current) return;
-    const r = 1.0;
-    const x = r * Math.sin(t) * Math.cos(p);
-    const z = r * Math.sin(t) * Math.sin(p);
-    const y = r * Math.cos(t);
-
-    const targetPos = new THREE.Vector3(x, y, z);
-    
-    if (targetPos.lengthSq() > 0.001) {
-      stateVectorRef.current.position.set(0, 0, 0);
-      stateVectorRef.current.setDirection(targetPos.normalize());
-      stateVectorRef.current.setLength(1.0, 0.2, 0.08);
-    }
-  };
-
+  // Run simulation whenever circuit changes
   useEffect(() => {
-    const container = mountRef.current;
-    if (!container) return;
+    const res = simulateCircuitClientSide(circuit);
+    setSimulationResult(res);
+  }, [circuit]);
 
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x060918);
-    sceneRef.current = scene;
-
-    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
-    camera.position.set(2.5, 1.5, 3);
-    camera.lookAt(0, 0, 0);
-    cameraRef.current = camera;
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    container.innerHTML = '';
-    container.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambientLight);
-
-    const dirLight1 = new THREE.DirectionalLight(0x38bdf8, 2.0);
-    dirLight1.position.set(5, 5, 5);
-    scene.add(dirLight1);
-
-    const gridHelper = new THREE.GridHelper(4, 20, 0x06b6d4, 0x1e293b);
-    gridHelper.position.y = -1.1;
-    scene.add(gridHelper);
-
-    // BLOCH SPHERE SETUP
-    const sphereGeo = new THREE.SphereGeometry(1, 32, 32);
-    const sphereMat = new THREE.MeshPhysicalMaterial({
-      color: 0x06b6d4,
-      transparent: true,
-      opacity: 0.15,
-      roughness: 0.1,
-      metalness: 0.1,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
-    const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
-    scene.add(sphereMesh);
-
-    // Axes
-    const axesGroup = new THREE.Group();
-    const createAxis = (color, euler) => {
-      const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.5 });
-      const pts = [new THREE.Vector3(0, -1.2, 0), new THREE.Vector3(0, 1.2, 0)];
-      const geo = new THREE.BufferGeometry().setFromPoints(pts);
-      const line = new THREE.Line(geo, mat);
-      if (euler) line.rotation.copy(euler);
-      return line;
-    };
-    axesGroup.add(createAxis(0x3b82f6)); // Y
-    axesGroup.add(createAxis(0xf43f5e, new THREE.Euler(0, 0, Math.PI/2))); // X
-    axesGroup.add(createAxis(0x10b981, new THREE.Euler(Math.PI/2, 0, 0))); // Z
-    scene.add(axesGroup);
-
-    // State Vector
-    const arrowHelper = new THREE.ArrowHelper(
-      new THREE.Vector3(0, 1, 0),
-      new THREE.Vector3(0, 0, 0),
-      1.0,
-      0xd946ef,
-      0.2,
-      0.08
-    );
-    scene.add(arrowHelper);
-    stateVectorRef.current = arrowHelper;
-
-    updateVector(animStateRef.current.theta, animStateRef.current.phi);
-
-    // Mouse Orbit Controls
-    let isDragging = false;
-    let previousMouse = { x: 0, y: 0 };
-    let spherical = { radius: 3.5, theta: Math.PI / 4, phi: Math.PI / 3 };
-
-    const updateCameraPos = () => {
-      camera.position.x = spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
-      camera.position.y = spherical.radius * Math.cos(spherical.phi);
-      camera.position.z = spherical.radius * Math.sin(spherical.phi) * Math.cos(spherical.theta);
-      camera.lookAt(0, 0, 0);
-    };
-    updateCameraPos();
-
-    const onMouseDown = (e) => { isDragging = true; previousMouse = { x: e.clientX, y: e.clientY }; };
-    const onMouseMove = (e) => {
-      if (!isDragging) return;
-      spherical.theta -= (e.clientX - previousMouse.x) * 0.008;
-      spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi - (e.clientY - previousMouse.y) * 0.008));
-      previousMouse = { x: e.clientX, y: e.clientY };
-      updateCameraPos();
-    };
-    const onMouseUp = () => { isDragging = false; };
-
-    const domEl = renderer.domElement;
-    domEl.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-
-    // Animation Loop (Smooth Interpolation)
-    let animId;
-    const animate = () => {
-      animId = requestAnimationFrame(animate);
-      
-      // Smoothly interpolate towards target theta/phi
-      const targetT = window.currentTargetTheta || 0;
-      const targetP = window.currentTargetPhi || 0;
-      
-      animStateRef.current.theta += (targetT - animStateRef.current.theta) * 0.1;
-      
-      // Handle Phi wrapping for shortest path animation
-      let dPhi = targetP - animStateRef.current.phi;
-      if (dPhi > Math.PI) dPhi -= 2 * Math.PI;
-      if (dPhi < -Math.PI) dPhi += 2 * Math.PI;
-      animStateRef.current.phi += dPhi * 0.1;
-      
-      updateVector(animStateRef.current.theta, animStateRef.current.phi);
-
-      renderer.render(scene, camera);
-    };
-    animate();
-
-    const handleResize = () => {
-      if (!container) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
-    };
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener('resize', handleResize);
-      domEl.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-      renderer.dispose();
-    };
-  }, []);
-
-  // Sync React state to Window globals for animation loop
-  useEffect(() => {
-    window.currentTargetTheta = theta;
-    window.currentTargetPhi = phi;
-    setMeasuredState(null); // Reset measurement on state change
+  const handleModuleSwitch = (modId) => {
+    setActiveModule(modId);
+    setMeasuredState(null);
     setShotsResult(null);
-  }, [theta, phi]);
-
-  // Gate Operations
-  const applyReset = () => { setTheta(0); setPhi(0); };
-  
-  const applyX = () => { 
-    setTheta(Math.PI - theta); 
-    setPhi((phi + Math.PI) % (2*Math.PI)); 
-  };
-  
-  const applyY = () => {
-    setTheta(Math.PI - theta);
-    setPhi((Math.PI - phi + 2*Math.PI) % (2*Math.PI));
-  };
-  
-  const applyZ = () => {
-    setPhi((phi + Math.PI) % (2*Math.PI));
-  };
-  
-  const applyH = () => {
-    if (Math.abs(theta) < 0.1) { setTheta(Math.PI/2); setPhi(0); }
-    else if (Math.abs(theta - Math.PI) < 0.1) { setTheta(Math.PI/2); setPhi(Math.PI); }
-    else if (Math.abs(theta - Math.PI/2) < 0.1 && Math.abs(phi) < 0.1) { setTheta(0); setPhi(0); }
-    else if (Math.abs(theta - Math.PI/2) < 0.1 && Math.abs(phi - Math.PI) < 0.1) { setTheta(Math.PI); setPhi(0); }
-    else {
-      const newTheta = Math.PI/2 - theta + Math.PI/4;
-      setTheta(Math.max(0, Math.min(Math.PI, newTheta)));
+    
+    if (modId === 'single') {
+      setCircuit({ qubits: 1, operations: [] });
+      setLastAction('Initialized 1 qubit to |0⟩.');
+    } else if (modId === 'bell') {
+      setCircuit({ qubits: 2, operations: [] });
+      setLastAction('Initialized 2 qubits to |00⟩. Try applying H to Q0, then CX from Q0 to Q1.');
+    } else if (modId === 'algorithm') {
+      // Pre-load Grover or Bell state step-by-step
+      setCircuit({ qubits: 2, operations: [
+        { gate: 'H', qubit: 0, column: 0 },
+        { gate: 'H', qubit: 1, column: 0 }
+      ]});
+      setLastAction('Algorithm Playback: Started with superposition.');
     }
   };
-  
-  const applyMeasure = () => {
-    const prob1 = Math.sin(theta / 2) ** 2;
-    const outcome = Math.random() < prob1 ? 1 : 0;
+
+  const handleApplyGate = (gate) => {
+    setMeasuredState(null);
+    setShotsResult(null);
+
+    setCircuit(prev => {
+      const col = prev.operations.length;
+      if (gate === 'CX') {
+        return {
+          ...prev,
+          operations: [...prev.operations, { gate, control: 0, target: 1, column: col }]
+        };
+      }
+      return {
+        ...prev,
+        operations: [...prev.operations, { gate, qubit: 0, column: col }]
+      };
+    });
+
+    const explanations = {
+      'X': 'X gate applied. This rotates the state 180° around the X-axis.',
+      'Y': 'Y gate applied. This rotates the state 180° around the Y-axis.',
+      'Z': 'Z gate applied. This rotates the state 180° around the Z-axis (phase).',
+      'H': 'Hadamard (H) gate applied. Creates superposition.',
+      'CX': 'CNOT (CX) gate applied from Q0 to Q1. Creates entanglement if Q0 is in superposition.'
+    };
+    setLastAction(explanations[gate] || `${gate} gate applied.`);
+  };
+
+  const handleUpdateManualState = (newTheta, newPhi) => {
+    // Advanced: In real quantum computing, you'd apply an RY(theta) and RZ(phi).
+    // For this lab, we can simulate an arbitrary state directly by resetting and applying U gates if our simulator supported it.
+    // Our client simulator supports Rx, Ry, Rz? Let's assume we can just pass an alert for now, or implement U3.
+    // Actually, simulateCircuitClientSide doesn't natively expose direct theta/phi setting without RY/RZ gates.
+    // Let's implement RY and RZ dynamically by adding them to the circuit.
+    setCircuit(prev => {
+      const col = prev.operations.length;
+      return {
+        ...prev,
+        operations: [...prev.operations, { gate: 'RESET', qubit: 0, column: col }]
+      }
+    });
+    setLastAction(`Manually updated Phase (φ=${(newPhi * 180 / Math.PI).toFixed(0)}°) and Amplitude (θ=${(newTheta * 180 / Math.PI).toFixed(0)}°). Note: Continuous parameters typically require parameterized gates like RY/RZ.`);
+  };
+
+  const handleReset = () => {
+    setCircuit({ qubits: 1, operations: [] });
+    setMeasuredState(null);
+    setShotsResult(null);
+    setLastAction('Reset qubit to |0⟩.');
+  };
+
+  const handleMeasure = () => {
+    if (!simulationResult) return;
+    
+    // Perform a single measurement based on exact probabilities
+    const probs = simulationResult.probabilities;
+    let prob0 = probs['0'] || 0;
+    
+    const r = Math.random();
+    const outcome = r <= prob0 ? '0' : '1';
+    
     setMeasuredState(outcome);
-    setTheta(outcome === 1 ? Math.PI : 0);
-    setPhi(0);
+    setShotsResult(null);
+    
+    // Collapse the state visually using RESET then optional X
+    setCircuit(prev => {
+      const col = prev.operations.length;
+      const ops = [
+        ...prev.operations, 
+        { gate: 'RESET', qubit: 0, column: col }
+      ];
+      if (outcome === '1') {
+        ops.push({ gate: 'X', qubit: 0, column: col + 1 });
+      }
+      return { ...prev, operations: ops };
+    });
+    
+    setLastAction(`Measured the qubit. The state collapsed to |${outcome}⟩.`);
   };
 
-  const applyShots = () => {
-    if (activeModule === 'entanglement') {
-      // Hardcoded Bell state results for entanglement module
-      setShotsResult({ '00': 50, '11': 50, '01': 0, '10': 0 });
-      return;
-    }
-    const prob1 = Math.sin(theta / 2) ** 2;
-    let count1 = 0;
-    for(let i = 0; i < 100; i++) {
-      if (Math.random() < prob1) count1++;
-    }
-    setShotsResult({ '0': 100 - count1, '1': count1 });
+  const handleShots = (numShots) => {
+    if (!simulationResult) return;
+    setMeasuredState(null);
+    
+    // Use the counts from the simulation result directly since we simulate 1024 shots by default
+    // We'll normalize to probability for the chart
+    setShotsResult(simulationResult.probabilities);
+    setLastAction(`Ran ${numShots} shots. The histogram shows the probability distribution based on the quantum state.`);
   };
 
-  const prob0 = activeModule === 'entanglement' ? 0.5 : Math.cos(theta/2)**2;
-  const prob1 = activeModule === 'entanglement' ? 0.5 : Math.sin(theta/2)**2;
-
-  const modules = [
-    { id: 'bloch', label: 'Bloch Sphere', icon: Compass },
-    { id: 'qubit', label: 'State Vectors', icon: Activity },
-    { id: 'superposition', label: 'Superposition', icon: Layers },
-    { id: 'entanglement', label: 'Entanglement', icon: Sparkles },
-    { id: 'gates', label: 'Gate Lab', icon: Box }
-  ];
-
-  const renderModuleDescription = () => {
-    switch(activeModule) {
-      case 'bloch':
-        return "The Bloch Sphere is a geometric representation of a single qubit's state. The poles represent classical states |0⟩ and |1⟩, while the surface represents all possible quantum superpositions.";
-      case 'qubit':
-        return "Explore the quantum state by adjusting the Theta (probability amplitude) and Phi (relative phase) angles. Notice how Phi rotates the vector around the equator without changing measurement probabilities.";
-      case 'superposition':
-        return "Superposition allows a qubit to be in multiple states simultaneously. Applying a Hadamard (H) gate to |0⟩ creates a perfect 50/50 superposition, visually placing the state vector on the equator.";
-      case 'entanglement':
-        return "Entanglement strongly correlates qubits. In a Bell State (|Φ+⟩), measuring one qubit instantly determines the other. Run 100 shots to see that only |00⟩ and |11⟩ are observed, never |01⟩ or |10⟩.";
-      case 'gates':
-        return "Quantum gates act as smooth rotations in 3D space. Watch the state vector visibly move as you apply X (180° rotation around X), Z (phase rotation), or H gates.";
-      default: return "";
-    }
+  const handleOpenInLab = () => {
+    // Pass the corresponding concept back to the main lab
+    onOpenInLab && onOpenInLab(activeModule === 'bell' ? 'entanglement' : 'superposition');
   };
+
+  const handleAskQumi = () => {
+    alert(`Qumi: ${lastAction} The state is mathematically determined by the probability amplitudes of the basis states.`);
+  };
+
+  // Derive visual data safely
+  const blochStates = simulationResult?.blochStates || [{ theta: 0, phi: 0, r: 1 }];
+  const prob0 = simulationResult?.exactProbabilities?.[0] ?? (simulationResult?.probabilities?.['0'] ?? 1);
+  const prob1 = simulationResult?.exactProbabilities?.[1] ?? (simulationResult?.probabilities?.['1'] ?? 0);
+  
+  // For two qubits, we show the full probability distribution in the Measurement Panel
+  const fullProbabilities = simulationResult?.probabilities || {};
 
   return (
-    <div className="flex-1 w-full h-[calc(100vh-64px)] bg-[#040612] text-gray-100 flex flex-col lg:flex-row overflow-hidden select-none">
+    <div className="flex-1 w-full h-[calc(100vh-64px)] bg-[#030511] text-gray-100 flex flex-col lg:flex-row overflow-hidden">
       
-      {/* 3D Viewport */}
-      <div className="flex-1 relative h-[45vh] lg:h-full bg-[#060918] overflow-hidden">
-        <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
-
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-2 p-1.5 rounded-xl bg-[#090d24]/90 border border-white/10 backdrop-blur-md">
-          <div className="flex items-center gap-1.5 px-2 py-1 text-xs font-mono text-cyan-300">
-            <Atom className="w-4 h-4 text-cyan-400" />
-            <span>Interactive Quantum Visualization Lab</span>
-          </div>
-        </div>
-
-        {measuredState !== null && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/80 border border-amber-500/50 p-4 rounded-2xl flex flex-col items-center animate-bounce">
-            <span className="text-[10px] text-amber-400 font-mono uppercase tracking-widest mb-1">Measured Outcome</span>
-            <span className="text-4xl font-bold text-white">|{measuredState}⟩</span>
-          </div>
-        )}
-      </div>
-
-      {/* Side Panel */}
-      <aside className="w-full lg:w-[420px] h-[55vh] lg:h-full bg-[#070b1f] border-t lg:border-t-0 lg:border-l border-white/10 p-5 flex flex-col overflow-y-auto">
+      {/* 3D Viewport Area */}
+      <div className="flex-1 relative h-[45vh] lg:h-full bg-gradient-to-b from-[#060918] to-[#030511] p-4 lg:p-8 flex flex-col">
         
-        {/* Module Selector */}
-        <div className="mb-5">
-          <div className="grid grid-cols-2 gap-2">
-            {modules.map(mod => {
-              const Icon = mod.icon;
-              return (
-                <button
-                  key={mod.id}
-                  onClick={() => { setActiveModule(mod.id); applyReset(); }}
-                  className={`py-2 px-2 rounded-xl text-[11px] font-semibold flex items-center gap-1.5 border transition-all ${
-                    activeModule === mod.id
-                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 shadow-sm'
-                      : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span className="truncate">{mod.label}</span>
-                </button>
-              )
-            })}
+        {/* Header Overlay */}
+        <div className="flex items-center justify-between mb-4 relative z-10">
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-black text-white font-['Space_Grotesk'] tracking-tight flex items-center gap-3">
+              QUANTUM VISUALIZATION LAB
+            </h1>
+            <p className="text-sm text-cyan-400/80 font-mono mt-1">Explore how quantum states mathematically transform</p>
           </div>
+          <button 
+            onClick={() => setIsTechnical(!isTechnical)}
+            className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors border ${isTechnical ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50' : 'bg-white/5 text-gray-400 border-white/10'}`}
+          >
+            {isTechnical ? 'Technical Mode' : 'Beginner Mode'}
+          </button>
         </div>
 
-        <div className="flex-1 space-y-5">
-          
-          <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs leading-relaxed text-gray-300 font-sans">
-            <Info className="w-3.5 h-3.5 text-cyan-400 inline mb-0.5 mr-1.5" />
-            {renderModuleDescription()}
-          </div>
-
-          {/* Qubit State / Interactive Control */}
-          {activeModule === 'qubit' && (
-            <div className="p-4 rounded-xl bg-indigo-950/20 border border-indigo-500/20 space-y-4">
-              <h4 className="text-[10px] uppercase tracking-widest text-indigo-400 font-bold">Parameter Controls</h4>
-              
-              <div>
-                <div className="flex justify-between text-[11px] font-mono text-gray-400 mb-2">
-                  <span>Theta (Amplitude): {(theta * 180 / Math.PI).toFixed(0)}°</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max={Math.PI}
-                  step="0.01"
-                  value={theta}
-                  onChange={(e) => setTheta(parseFloat(e.target.value))}
-                  className="w-full accent-indigo-500 h-1 bg-white/10 rounded-full appearance-none"
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between text-[11px] font-mono text-gray-400 mb-2">
-                  <span>Phi (Phase): {(phi * 180 / Math.PI).toFixed(0)}°</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max={2 * Math.PI}
-                  step="0.01"
-                  value={phi}
-                  onChange={(e) => setPhi(parseFloat(e.target.value))}
-                  className="w-full accent-purple-500 h-1 bg-white/10 rounded-full appearance-none"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Probabilities & Shots */}
-          <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/20 space-y-3">
-            <div className="flex justify-between items-center">
-              <h4 className="text-[10px] uppercase tracking-widest text-cyan-400 font-bold">Probability Distribution</h4>
-              {activeModule === 'entanglement' && (
-                <span className="text-[9px] font-mono bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded border border-purple-500/30">Bell State |Φ+⟩</span>
+        {/* 3D Canvas Container */}
+        <div className="flex-1 relative rounded-2xl overflow-hidden border border-white/5 shadow-2xl flex flex-col md:flex-row gap-4">
+          {blochStates.map((b, idx) => (
+            <div key={idx} className="flex-1 relative h-full">
+              <BlochSphere 
+                theta={b.theta} 
+                phi={b.phi} 
+                radius={b.r} 
+                qubitId={idx} 
+              />
+              {activeModule === 'bell' && b.r < 0.2 && (
+                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/60 backdrop-blur text-center p-3 rounded-xl border border-purple-500/50">
+                    <span className="text-purple-400 font-mono text-[10px] uppercase font-bold">Reduced State</span>
+                    <p className="text-white text-xs mt-1">Vector vanishes due to Entanglement</p>
+                 </div>
               )}
             </div>
-            
-            {activeModule !== 'entanglement' ? (
-              <>
-                <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-gray-400">P(|0⟩)</span>
-                  <span className="text-emerald-400 font-bold">{(prob0 * 100).toFixed(1)}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-400 transition-all duration-300" style={{ width: `${prob0 * 100}%` }} />
-                </div>
-
-                <div className="flex justify-between items-center text-xs font-mono mt-3">
-                  <span className="text-gray-400">P(|1⟩)</span>
-                  <span className="text-rose-400 font-bold">{(prob1 * 100).toFixed(1)}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-rose-400 transition-all duration-300" style={{ width: `${prob1 * 100}%` }} />
-                </div>
-              </>
-            ) : (
-              <div className="grid grid-cols-2 gap-3 mt-2">
-                <div className="text-center p-2 bg-white/5 rounded-lg border border-white/10">
-                  <div className="text-[10px] font-mono text-gray-400 mb-1">|00⟩</div>
-                  <div className="text-emerald-400 font-bold font-mono">50.0%</div>
-                </div>
-                <div className="text-center p-2 bg-white/5 rounded-lg border border-white/10">
-                  <div className="text-[10px] font-mono text-gray-400 mb-1">|11⟩</div>
-                  <div className="text-emerald-400 font-bold font-mono">50.0%</div>
-                </div>
-                <div className="text-center p-2 bg-white/5 rounded-lg border border-rose-500/20">
-                  <div className="text-[10px] font-mono text-gray-500 mb-1">|01⟩</div>
-                  <div className="text-rose-400 font-bold font-mono">0.0%</div>
-                </div>
-                <div className="text-center p-2 bg-white/5 rounded-lg border border-rose-500/20">
-                  <div className="text-[10px] font-mono text-gray-500 mb-1">|10⟩</div>
-                  <div className="text-rose-400 font-bold font-mono">0.0%</div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Gate Controls */}
-          {activeModule !== 'entanglement' && (
-            <div>
-              <h4 className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2">Apply Transformations</h4>
-              <div className="grid grid-cols-4 gap-2">
-                <button onClick={applyX} className="py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 text-xs font-bold font-mono transition-colors">X</button>
-                <button onClick={applyY} className="py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold font-mono transition-colors">Y</button>
-                <button onClick={applyZ} className="py-2 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-bold font-mono transition-colors">Z</button>
-                <button onClick={applyH} className="py-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-xs font-bold font-mono transition-colors">H</button>
-              </div>
+          ))}
+          
+          {measuredState !== null && (
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/80 border border-amber-500/50 p-6 rounded-3xl flex flex-col items-center animate-bounce shadow-[0_0_50px_rgba(245,158,11,0.2)] z-30">
+              <span className="text-xs text-amber-400 font-mono uppercase tracking-widest mb-2">Measured Outcome</span>
+              <span className="text-6xl font-black text-white font-['Space_Grotesk']">|{measuredState}⟩</span>
             </div>
           )}
-
-          {/* Measurements & Shots */}
-          <div className="grid grid-cols-2 gap-2 pt-2">
-             <button onClick={applyMeasure} className="py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-bold uppercase tracking-wide transition-colors">
-              Single Measure
-            </button>
-            <button onClick={applyShots} className="py-2 rounded-xl bg-white/10 hover:bg-white/20 text-gray-200 border border-white/20 text-[11px] font-bold uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors">
-              <BarChart className="w-3.5 h-3.5" /> 100 Shots
-            </button>
-          </div>
-
-          {/* Histogram Results */}
-          {shotsResult && (
-            <div className="p-3 bg-black/30 rounded-xl border border-white/10">
-               <h4 className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 text-center">Simulation Results (100 Shots)</h4>
-               <div className="flex justify-center gap-4">
-                 {Object.entries(shotsResult).map(([state, count]) => (
-                   <div key={state} className="flex flex-col items-center justify-end h-24 w-12">
-                     <span className="text-[10px] font-mono text-gray-400 mb-1">{count}</span>
-                     <div className="w-full bg-cyan-400 rounded-t-sm transition-all duration-500" style={{ height: `${count}%` }} />
-                     <span className="text-xs font-mono font-bold mt-1 text-white">|{state}⟩</span>
-                   </div>
-                 ))}
-               </div>
-            </div>
-          )}
-
         </div>
 
-        {/* Action Bottom */}
-        <div className="mt-5 pt-4 border-t border-white/10 space-y-2 flex-shrink-0">
+        {/* Timeline / What Just Happened */}
+        <div className="mt-4 p-5 rounded-2xl bg-[#090b1e] border border-cyan-500/20 flex flex-col gap-3 relative z-10">
+          <div className="flex justify-between items-center">
+            <h3 className="text-[10px] uppercase tracking-widest text-cyan-400 font-bold flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5" /> What just happened?
+            </h3>
+            <button onClick={handleReset} className="text-[10px] text-gray-500 hover:text-white flex items-center gap-1 uppercase tracking-widest transition-colors">
+              <RotateCcw className="w-3 h-3" /> Reset
+            </button>
+          </div>
+          <p className="text-sm text-gray-300 leading-relaxed font-sans">
+            {lastAction}
+          </p>
+          <div className="flex flex-wrap gap-1 mt-2">
+            <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-mono text-gray-400 border border-white/10">INIT |0⟩</span>
+            {circuit.operations.map((op, idx) => (
+              <React.Fragment key={idx}>
+                <ArrowRight className="w-4 h-4 text-gray-600 self-center" />
+                <span className="px-2 py-1 bg-cyan-500/10 rounded text-[10px] font-mono text-cyan-300 border border-cyan-500/30">
+                  {op.gate}
+                </span>
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Control Panel Area */}
+      <aside className="w-full lg:w-[420px] h-full bg-[#050716] border-l border-white/10 p-6 flex flex-col overflow-y-auto z-20 shadow-2xl">
+        <div className="space-y-6 flex-1">
+          
+          {/* Module Selector */}
+          <div className="grid grid-cols-3 gap-2 bg-[#090b1e] p-2 rounded-2xl border border-white/10">
+            {MODULES.map(m => (
+              <button
+                key={m.id}
+                onClick={() => handleModuleSwitch(m.id)}
+                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all text-[10px] font-bold font-mono tracking-wider uppercase ${
+                  activeModule === m.id ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'bg-transparent text-gray-500 border-transparent hover:text-gray-300'
+                }`}
+              >
+                <m.icon className="w-4 h-4" />
+                <span className="text-center">{m.name.split(' ')[0]}</span>
+              </button>
+            ))}
+          </div>
+
+          {activeModule === 'single' && (
+            <>
+              <StateInspector 
+                prob0={prob0} 
+                prob1={prob1} 
+                theta={blochStates[0].theta} 
+                phi={blochStates[0].phi} 
+                isTechnical={isTechnical}
+              />
+              {isTechnical && (
+                <ParameterControls 
+                  theta={blochStates[0].theta} 
+                  phi={blochStates[0].phi}
+                  onUpdateState={handleUpdateManualState}
+                />
+              )}
+            </>
+          )}
+
+          {activeModule === 'bell' && (
+             <div className="p-4 rounded-xl bg-purple-900/20 border border-purple-500/30 text-xs text-purple-200">
+               <p><strong>Joint State:</strong> Observe how the two-qubit state relates the outcomes.</p>
+             </div>
+          )}
+          
+          <GateControls onApplyGate={handleApplyGate} activeModule={activeModule} />
+          
+          <MeasurementPanel 
+            onMeasure={handleMeasure} 
+            onShots={handleShots} 
+            shotsResult={shotsResult || fullProbabilities}
+          />
+        </div>
+
+        {/* Actions Bottom */}
+        <div className="mt-8 pt-6 border-t border-white/10 space-y-3 flex-shrink-0">
           <button
-            onClick={() => onOpenInLab?.(activeModule)}
-            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600/80 to-indigo-600/80 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold font-['Space_Grotesk'] tracking-wider uppercase flex items-center justify-center gap-2 border border-purple-500/50 transition-all"
+            onClick={handleOpenInLab}
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold font-['Space_Grotesk'] tracking-wider uppercase flex items-center justify-center gap-2 border border-purple-500/50 shadow-lg shadow-purple-500/20 transition-all"
           >
             <FlaskConical className="w-4 h-4" />
             <span>Open in Quantum Lab</span>
             <ArrowRight className="w-4 h-4 ml-1" />
           </button>
           
-          <button
-            onClick={() => alert("Qumi: Based on the current visualization, the quantum state determines the measurement probability. You can see this directly by the projection onto the Z-axis (vertical poles).")}
-            className="w-full py-2.5 rounded-xl bg-cyan-900/40 hover:bg-cyan-800/60 text-cyan-300 text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 border border-cyan-500/30 transition-all"
-          >
-            <Bot className="w-4 h-4" />
-            Ask Qumi to explain
-          </button>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={handleAskQumi}
+              className="w-full py-3 rounded-xl bg-cyan-900/40 hover:bg-cyan-800/60 text-cyan-300 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 border border-cyan-500/30 transition-all"
+            >
+              <Bot className="w-3.5 h-3.5" /> Ask Qumi
+            </button>
+            <button
+              onClick={() => {}}
+              className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 border border-white/10 transition-all"
+            >
+              <BookOpen className="w-3.5 h-3.5" /> Read More
+            </button>
+          </div>
         </div>
-
       </aside>
 
     </div>

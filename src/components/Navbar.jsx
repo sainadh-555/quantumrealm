@@ -52,6 +52,17 @@ export default function Navbar({
           >
             LEARNING
           </button>
+          
+          <button
+            onClick={() => setActiveWorkspace('instructor')}
+            className={`px-6 py-2 rounded-xl text-sm font-semibold tracking-widest font-['Space_Grotesk'] transition-all flex items-center gap-2 ${
+              activeWorkspace === 'instructor'
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm shadow-purple-500/10'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-white/5 border border-transparent'
+            }`}
+          >
+            INSTRUCTOR
+          </button>
         </nav>
 
         {/* RIGHT: Profile/Dashboard Icon */}

@@ -11,42 +11,107 @@
 const API_BASE_URL = 'http://localhost:8000';
 
 /**
- * Executes quantum simulation for the given circuit model.
- * Probes the FastAPI + Qiskit Aer backend first. If unreachable or offline,
- * falls back to the client-side statevector simulation engine.
+ * SimulatorProvider Base Class (Multi-Backend Architecture Abstraction)
  */
-export async function runSimulation(circuitData) {
-  const startTime = performance.now();
+export class SimulatorProvider {
+  constructor(name) {
+    this.name = name;
+  }
+  async simulate(circuitData, options = {}) {
+    throw new Error('simulate() must be implemented by concrete provider');
+  }
+}
 
-  try {
+/**
+ * Qiskit Aer Provider (Primary via FastAPI)
+ */
+export class QiskitAerProvider extends SimulatorProvider {
+  constructor() {
+    super('Qiskit Aer');
+  }
+
+  async simulate(circuitData, options = {}) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1800); // 1.8s timeout probe
+    const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs || 2500);
 
     const response = await fetch(`${API_BASE_URL}/api/simulate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(circuitData),
       signal: controller.signal
     });
 
     clearTimeout(timeoutId);
+    if (!response.ok) throw new Error(`Backend returned ${response.status}`);
+    
+    const data = await response.json();
+    return {
+      ...data,
+      isRealBackend: true,
+      backend: this.name
+    };
+  }
+}
 
-    if (response.ok) {
-      const data = await response.json();
-      return {
-        ...data,
-        isRealBackend: true
-      };
-    }
-  } catch (error) {
-    // Expected when FastAPI dev server is not active in this session
-    console.info("FastAPI Qiskit backend offline. Executing client-side Quantum Statevector Engine.", error.message);
+/**
+ * Local JS Statevector Provider (Fallback)
+ */
+export class LocalStatevectorProvider extends SimulatorProvider {
+  constructor() {
+    super('Local JS Statevector');
   }
 
-  // Fallback: Authenticated client-side Quantum Simulation Engine
-  return simulateCircuitClientSide(circuitData, startTime);
+  async simulate(circuitData, options = {}) {
+    return simulateCircuitClientSide(circuitData, options.startTime || performance.now());
+  }
+}
+
+// FUTURE EXPANSION SLOTS:
+export class PennyLaneProvider extends SimulatorProvider {
+  constructor() { super('PennyLane'); }
+  async simulate(circuitData) { throw new Error('PennyLaneProvider not yet implemented. Use QiskitAerProvider.'); }
+}
+export class CirqProvider extends SimulatorProvider {
+  constructor() { super('Google Cirq'); }
+  async simulate(circuitData) { throw new Error('CirqProvider not yet implemented. Use QiskitAerProvider.'); }
+}
+export class QBraidProvider extends SimulatorProvider {
+  constructor() { super('qBraid'); }
+  async simulate(circuitData) { throw new Error('QBraidProvider not yet implemented.'); }
+}
+
+/**
+ * Global Simulator Engine Instance
+ * Handles fallback and provider routing.
+ */
+class SimulationEngineManager {
+  constructor() {
+    this.primaryProvider = new QiskitAerProvider();
+    this.fallbackProvider = new LocalStatevectorProvider();
+    this.activeProviderName = this.primaryProvider.name;
+  }
+
+  async run(circuitData) {
+    const startTime = performance.now();
+    try {
+      // 1. Try Primary Backend (Qiskit Aer)
+      return await this.primaryProvider.simulate(circuitData, { timeoutMs: 1800 });
+    } catch (error) {
+      console.info(`${this.primaryProvider.name} offline or timed out. Falling back to ${this.fallbackProvider.name}.`, error.message);
+      // 2. Fallback to Local Engine
+      const res = await this.fallbackProvider.simulate(circuitData, { startTime });
+      return { ...res, backend: "Qiskit Aer (Local Mock Service)" };
+    }
+  }
+}
+
+export const simulatorEngine = new SimulationEngineManager();
+
+/**
+ * Legacy API Bridge (to prevent breaking existing imports)
+ */
+export async function runSimulation(circuitData) {
+  return simulatorEngine.run(circuitData);
 }
 
 /**

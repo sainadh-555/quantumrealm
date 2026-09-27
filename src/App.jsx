@@ -4,6 +4,7 @@ import Sidebar from './components/layout/Sidebar';
 import SimulationWorkspace from './components/simulation/SimulationWorkspace';
 import LearningWorkspace from './components/learning/LearningWorkspace';
 import StudentDashboard from './components/dashboard/StudentDashboard';
+import InstructorDashboard from './components/dashboard/InstructorDashboard';
 import LandingPage from './components/home/LandingPage';
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
 
   // Cross-workspace context (e.g., from game to simulation)
   const [injectedLabConcept, setInjectedLabConcept] = useState(null);
+  const [activeChallenge, setActiveChallenge] = useState(null);
 
   // KEEP-ALIVE PING for Render Free Tier Backend
   React.useEffect(() => {
@@ -38,8 +40,9 @@ export default function App() {
   }, []);
 
   // Helper to jump to a simulation tool with a specific concept
-  const handleJumpToSimulation = (tool, concept) => {
+  const handleJumpToSimulation = (tool, concept, challenge = null) => {
     if (concept) setInjectedLabConcept(concept);
+    if (challenge) setActiveChallenge(challenge);
     setSimulationTool(tool);
     setActiveWorkspace('simulation');
   };
@@ -83,6 +86,7 @@ export default function App() {
               activeTool={simulationTool}
               setActiveTool={setSimulationTool}
               initialConcept={injectedLabConcept}
+              activeChallenge={activeChallenge}
               onCircuitUpdate={() => {}}
               onNavigateTo3D={() => { setActiveWorkspace('learning'); setLearningTool('3d'); }}
             />
@@ -97,6 +101,10 @@ export default function App() {
               onNavigateTo3D={() => { setActiveWorkspace('learning'); setLearningTool('3d'); }}
             />
           )}
+
+          {activeWorkspace === 'instructor' && (
+            <InstructorDashboard />
+          )}
         </main>
       </div>
 
@@ -104,6 +112,10 @@ export default function App() {
       <StudentDashboard
         isOpen={isDashboardOpen}
         onClose={() => setIsDashboardOpen(false)}
+        onJumpToLab={(concept) => {
+          setIsDashboardOpen(false);
+          handleJumpToSimulation('circuit', concept);
+        }}
       />
 
     </div>

@@ -19,10 +19,12 @@ export default function LearningWorkspace({
   };
 
   const handleExploreInLab = (conceptId) => {
-    // We need to switch to Simulation workspace, open circuit tool, and pass concept.
-    // The App component might need to handle this state transfer.
-    // We'll pass an event up to the parent.
-    setSimulationTool('circuit', conceptId);
+    setSimulationTool('circuit', conceptId, null);
+    setActiveWorkspace('simulation');
+  };
+
+  const handleStartChallenge = (challenge) => {
+    setSimulationTool('circuit', null, challenge);
     setActiveWorkspace('simulation');
   };
 
@@ -32,6 +34,7 @@ export default function LearningWorkspace({
         <LearningHub
           onPlayConcept={handlePlayConceptInRush}
           onExploreInLab={handleExploreInLab}
+          onStartChallenge={handleStartChallenge}
         />
       )}
 
