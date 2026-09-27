@@ -27,7 +27,7 @@ export class AIService {
     };
 
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://quantumrealm.onrender.com';
       const response = await fetch(`${backendUrl}/api/qumi`, {
         method: 'POST',
         headers: {
