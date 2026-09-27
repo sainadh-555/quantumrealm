@@ -70,6 +70,18 @@ export function circuitToQiskit(circuit) {
       case 'CZ':
         lines.push(`qc.cz(${op.control}, ${op.target})`);
         break;
+      case 'SWAP':
+        lines.push(`qc.swap(${op.control}, ${op.target})`);
+        break;
+      case 'RX':
+        lines.push(`qc.rx(${op.params?.theta || '0'}, ${op.qubit})`);
+        break;
+      case 'RY':
+        lines.push(`qc.ry(${op.params?.theta || '0'}, ${op.qubit})`);
+        break;
+      case 'RZ':
+        lines.push(`qc.rz(${op.params?.theta || '0'}, ${op.qubit})`);
+        break;
       case 'RESET':
         lines.push(`qc.reset(${op.qubit})`);
         break;

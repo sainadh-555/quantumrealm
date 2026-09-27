@@ -68,8 +68,28 @@ export class CodeParser {
         continue;
       }
 
-      // Two-qubit controlled gates: qc.cx(0, 1), qc.cnot(0, 1), qc.cz(0, 1)
-      const twoGateMatch = line.match(/qc\.(cx|cnot|cz)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/i);
+      // Single-qubit parameterized gates: qc.rx(theta, 0), qc.ry(theta, 0), qc.rz(theta, 0)
+      const paramGateMatch = line.match(/qc\.(rx|ry|rz)\s*\(\s*([^,]+)\s*,\s*(\d+)\s*\)/i);
+      if (paramGateMatch) {
+        const gateType = paramGateMatch[1].toUpperCase();
+        const param = paramGateMatch[2].trim();
+        const q = parseInt(paramGateMatch[3], 10);
+        if (q < qubits) {
+          const col = qubitActiveCol[q] || 0;
+          qubitActiveCol[q] = col + 1;
+          rawOps.push({
+            id: `parsed-op-${rawOps.length + 1}`,
+            gate: gateType,
+            qubit: q,
+            params: { theta: param },
+            column: col
+          });
+        }
+        continue;
+      }
+
+      // Two-qubit controlled gates: qc.cx(0, 1), qc.cnot(0, 1), qc.cz(0, 1), qc.swap(0, 1)
+      const twoGateMatch = line.match(/qc\.(cx|cnot|cz|swap)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/i);
       if (twoGateMatch) {
         const gateType = twoGateMatch[1].toUpperCase() === 'CNOT' ? 'CX' : twoGateMatch[1].toUpperCase();
         const control = parseInt(twoGateMatch[2], 10);
