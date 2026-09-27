@@ -33,7 +33,9 @@ export default function QumiWorkspace({
   const [isTyping, setIsTyping] = useState(false);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
+  const [acceptedFileType, setAcceptedFileType] = useState('');
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Auto-scroll
   useEffect(() => {
@@ -66,7 +68,8 @@ export default function QumiWorkspace({
         learnerModel: learnerModel || { level: 'beginner', recentTopics: [] },
         learningContext: learningContext || null,
         threeDContext: threeDContext || null,
-        mode: mode
+        mode: mode,
+        attachments: attachedFile ? [attachedFile] : null
       };
 
       // Call the real AI endpoint
@@ -151,17 +154,55 @@ export default function QumiWorkspace({
     }
   };
 
-  const handleAttach = (type) => {
-    // Mocking file attachment for frontend UI/UX purposes
-    let fileName = '';
-    let icon = null;
+  const handleAttachClick = (type) => {
+    let accept = '';
+    if (type === 'image') accept = 'image/*';
+    if (type === 'pdf') accept = 'application/pdf';
+    if (type === 'doc') accept = '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     
-    if (type === 'image') { fileName = 'quantum-circuit.png'; icon = <ImageIcon className="w-4 h-4" />; }
-    if (type === 'pdf') { fileName = 'quantum-notes.pdf'; icon = <FileText className="w-4 h-4" />; }
-    if (type === 'doc') { fileName = 'research-paper.docx'; icon = <File className="w-4 h-4" />; }
-    
-    setAttachedFile({ name: fileName, type, icon });
+    setAcceptedFileType(accept);
     setShowAttachmentMenu(false);
+    
+    setTimeout(() => {
+      fileInputRef.current?.click();
+    }, 0);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setMessages(prev => [...prev, { role: 'assistant', content: "I cannot process this file because it is too large. The maximum size is 10 MB." }]);
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Data = event.target.result;
+      
+      let type = 'doc';
+      let icon = <File className="w-4 h-4" />;
+      
+      if (file.type.startsWith('image/')) {
+        type = 'image';
+        icon = <ImageIcon className="w-4 h-4" />;
+      } else if (file.type === 'application/pdf') {
+        type = 'pdf';
+        icon = <FileText className="w-4 h-4" />;
+      }
+
+      setAttachedFile({
+        name: file.name,
+        type: type,
+        icon: icon,
+        data_url: base64Data,
+        mime_type: file.type
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const EmptyState = () => (
@@ -282,16 +323,25 @@ export default function QumiWorkspace({
             </div>
           )}
 
+          {/* Hidden File Input */}
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            accept={acceptedFileType} 
+            className="hidden" 
+          />
+
           {/* Attachment Menu */}
           {showAttachmentMenu && (
             <div className="absolute bottom-[80px] left-6 sm:left-8 bg-[#110c24] border border-purple-500/30 p-2 rounded-xl shadow-2xl flex flex-col gap-1 animate-in slide-in-from-bottom-2 z-10 w-48">
-              <button onClick={() => handleAttach('image')} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-500/20 text-left text-sm text-gray-300 hover:text-white transition-colors">
+              <button onClick={() => handleAttachClick('image')} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-500/20 text-left text-sm text-gray-300 hover:text-white transition-colors">
                 <ImageIcon className="w-4 h-4 text-cyan-400" /> Upload Image
               </button>
-              <button onClick={() => handleAttach('pdf')} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-500/20 text-left text-sm text-gray-300 hover:text-white transition-colors">
+              <button onClick={() => handleAttachClick('pdf')} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-500/20 text-left text-sm text-gray-300 hover:text-white transition-colors">
                 <FileText className="w-4 h-4 text-purple-400" /> Upload PDF
               </button>
-              <button onClick={() => handleAttach('doc')} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-500/20 text-left text-sm text-gray-300 hover:text-white transition-colors">
+              <button onClick={() => handleAttachClick('doc')} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-500/20 text-left text-sm text-gray-300 hover:text-white transition-colors">
                 <File className="w-4 h-4 text-amber-400" /> Upload Document
               </button>
             </div>

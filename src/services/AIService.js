@@ -26,7 +26,8 @@ export class AIService {
       mode: mode || 'simulation',
       learner_model: learnerModel || null,
       learning_context: learningContext || null,
-      three_d_context: threeDContext || null
+      three_d_context: threeDContext || null,
+      attachments: context.attachments || null
     };
 
     try {

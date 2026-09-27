@@ -18,7 +18,10 @@ import json
 import urllib.request
 import urllib.error
 import re
+import traceback
 from dotenv import load_dotenv
+
+from services.attachment_parser import process_attachment
 
 from openai import OpenAI
 
@@ -229,6 +232,7 @@ class QumiRequest(BaseModel):
     learner_model: Optional[Dict[str, Any]] = None
     learning_context: Optional[str] = None
     three_d_context: Optional[Dict[str, Any]] = None
+    attachments: Optional[List[Dict[str, Any]]] = None
 
 @app.post("/api/qumi")
 def ask_qumi(req: QumiRequest):
@@ -259,6 +263,23 @@ TEACHING RULES:
 
 You have access to the user's live application state. You can also trigger UI actions using tools if necessary."""
 
+        # Check if model supports vision (e.g. gpt-4o, claude-3.5, llava, etc, or specifically for Groq we check if it is vision capable, e.g. Llama-3.2-11B-Vision-Preview)
+        # We err on the side of caution. For now, since the user is using `openai/gpt-oss-20b`, we assume it does not support vision natively unless stated. But we will pass it anyway if it is OpenAI api compatible.
+        vision_capable = any(m in QUMI_MODEL.lower() for m in ["gpt-4", "vision", "claude-3", "llava", "gemini"])
+        
+        attachments_text = ""
+        image_attachments = []
+        
+        if req.attachments:
+            for attachment in req.attachments:
+                parsed = process_attachment(attachment, vision_capable=vision_capable)
+                if parsed["type"] == "error":
+                    return {"success": False, "error": parsed["content"]}
+                elif parsed["type"] == "text":
+                    attachments_text += f"\n\nATTACHED DOCUMENT ({attachment.get('name', 'Unknown')}):\n{parsed['content']}\n"
+                elif parsed["type"] == "image":
+                    image_attachments.append(parsed["content"])
+
         # Inject context into the prompt
         context_prompt = f"CURRENT APPLICATION STATE:\n"
         if req.circuit and req.circuit.get('operations'):
@@ -280,6 +301,9 @@ You have access to the user's live application state. You can also trigger UI ac
         if req.three_d_context:
             context_prompt += f"3D VISUALIZATION CONTEXT: {json.dumps(req.three_d_context)}\n"
             
+        if attachments_text:
+            context_prompt += attachments_text
+            
         openai_messages = [{"role": "system", "content": system_instruction}]
         
         # Add conversation history
@@ -293,7 +317,13 @@ You have access to the user's live application state. You can also trigger UI ac
                 content = f"[System: Tool execution result] {content}"
                 
             if i == len(req.messages) - 1 and role == "user":
-                content = context_prompt + "\nUSER MESSAGE:\n" + content
+                if image_attachments:
+                    final_content = [{"type": "text", "text": context_prompt + "\nUSER MESSAGE:\n" + content}]
+                    for img in image_attachments:
+                        final_content.append({"type": "image_url", "image_url": {"url": img}})
+                    content = final_content
+                else:
+                    content = context_prompt + "\nUSER MESSAGE:\n" + content
                 
             openai_messages.append({"role": role, "content": content})
 
