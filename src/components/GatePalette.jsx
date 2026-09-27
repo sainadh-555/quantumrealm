@@ -16,6 +16,7 @@ export default function GatePalette({ selectedGate, onSelectGate, onExplainGate 
   const controlledGates = filteredGates.filter(g => g.category === GATE_CATEGORIES.CONTROLLED);
   const otherGates = filteredGates.filter(g => g.category === GATE_CATEGORIES.OTHER);
 
+  return (
     <aside className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
