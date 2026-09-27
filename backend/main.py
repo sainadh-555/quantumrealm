@@ -23,31 +23,35 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
-QUMI_MODEL = os.getenv("QUMI_MODEL", "gpt-4o-mini").strip()
+QUMI_MODEL = os.getenv("QUMI_MODEL", "openai/gpt-oss-20b").strip()
+
+if QUMI_MODEL == "llama-3.1-8b-instant" or QUMI_MODEL == "llama3-8b-8192":
+    print("Deprecated Qumi model detected. Use openai/gpt-oss-20b.")
+    QUMI_MODEL = "openai/gpt-oss-20b"
+
 AI_API_KEY = os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("GROK_API_KEY")
 AI_BASE_URL = os.getenv("AI_BASE_URL")
 if AI_BASE_URL and AI_BASE_URL.endswith("/chat/completions"):
     AI_BASE_URL = AI_BASE_URL.replace("/chat/completions", "")
+
+print(f"Qumi provider: Groq")
+print(f"Qumi model: {QUMI_MODEL}")
+print("Qumi backend: ready")
 
 # Initialize Client
 if AI_API_KEY:
     kwargs = {"api_key": AI_API_KEY}
     
     # Auto-fallback logic if base URL isn't explicitly set
-    valid_groq_models = ["llama-3.1-70b-versatile", "llama-3.1-8b-instant", "llama3-70b-8192", "llama3-8b-8192", "mixtral-8x7b-32768", "gemma2-9b-it", "gemma-7b-it"]
     if not AI_BASE_URL:
         if AI_API_KEY.startswith("gsk_"):
             kwargs["base_url"] = "https://api.groq.com/openai/v1"
-            if QUMI_MODEL not in valid_groq_models:
-                QUMI_MODEL = "llama3-8b-8192"
         elif AI_API_KEY.startswith("xai-") or os.getenv("GROK_API_KEY") == AI_API_KEY:
             kwargs["base_url"] = "https://api.x.ai/v1"
             if "gpt" in QUMI_MODEL or "openai" in QUMI_MODEL:
                 QUMI_MODEL = "grok-beta"
     else:
         kwargs["base_url"] = AI_BASE_URL
-        if "groq.com" in AI_BASE_URL and QUMI_MODEL not in valid_groq_models:
-            QUMI_MODEL = "llama3-8b-8192"
         
     client = OpenAI(**kwargs)
 else:
@@ -83,7 +87,11 @@ app.add_middleware(
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "provider": "groq" if client and "groq" in str(client.base_url) else ("xai" if client and "x.ai" in str(client.base_url) else "openai"),
+        "model_configured": QUMI_MODEL is not None and QUMI_MODEL != ""
+    }
 
 class CircuitOperation(BaseModel):
     gate: str
@@ -396,8 +404,8 @@ You have access to the user's live application state. You can also trigger UI ac
         error_msg = str(e).lower()
         if "404" in error_msg or "model_not_found" in error_msg or "does not exist" in error_msg:
             print(f"[QUMI ERROR] Provider rejected model: {QUMI_MODEL}. Raw error: {str(e)}")
-            raise HTTPException(status_code=503, detail=f"QUMI_MODEL_UNAVAILABLE: {str(e)} (Model requested: {QUMI_MODEL})")
+            return {"success": False, "error": "QUMI_MODEL_UNAVAILABLE"}
             
         print(f"[QUMI ERROR] API request failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"QUMI_SERVICE_ERROR: {str(e)}")
+        return {"success": False, "error": "QUMI_SERVICE_ERROR"}
 
