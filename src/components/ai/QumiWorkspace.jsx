@@ -97,9 +97,13 @@ export default function QumiWorkspace({
     if (action.type === 'circuit') {
       onCircuitAction?.('BUILD_CIRCUIT', action.data || action.circuitData);
     } else if (action.type === 'navigation') {
-      alert(`Navigating to ${action.data.module} visualization...`);
+      if (onNavigate) {
+        onNavigate(action.data?.module || '3d');
+      } else {
+        console.warn('onNavigate is not defined');
+      }
     } else if (action.type === 'quiz') {
-      alert(`Quiz: ${action.data.question}`);
+      alert(`Quiz: ${action.data?.question || 'No question provided'}`);
     } else {
       onCircuitAction?.(action.type, action.data || action.circuitData);
     }
