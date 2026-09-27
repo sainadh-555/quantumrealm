@@ -103,7 +103,7 @@ export class AIService {
         mockResponse = "I can help with that! A Bell State requires two steps:\n1. Put the first qubit in superposition (H gate).\n2. Entangle the second qubit to it (CX gate).\n\nI'll generate this circuit for you in the Quantum Lab right now.";
         action = { type: 'circuit', label: 'Create Circuit', data: { qubits: 2, gates: [{ type: 'H', qubits: [0], column: 0 }, { type: 'CX', qubits: [0, 1], column: 1 }] } };
       } else {
-         mockResponse = "That's a great question. Before I just give you the answer, what do you think is happening here based on the gates you've applied?";
+         mockResponse = "That's a great question! However, the quantum backend is currently waking up from sleep mode (this can take up to 50 seconds). Please hold on for just a moment and try asking again!";
       }
 
       return {

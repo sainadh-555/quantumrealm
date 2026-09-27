@@ -257,8 +257,10 @@ You have access to the user's live application state. You can also trigger UI ac
         context_prompt = f"CURRENT APPLICATION STATE:\n"
         if req.circuit and req.circuit.get('operations'):
             context_prompt += f"CIRCUIT: {json.dumps(req.circuit)}\n"
+        elif req.circuit is not None:
+            context_prompt += "CIRCUIT: Empty (0 gates applied in the lab)\n"
         else:
-            context_prompt += "CIRCUIT: Empty\n"
+            context_prompt += "CIRCUIT: Not currently in the Simulation Lab. DO NOT mention gates or circuits unless the user asks about them.\n"
             
         if req.results:
             context_prompt += f"SIMULATION RESULTS: {json.dumps(req.results)}\n"
