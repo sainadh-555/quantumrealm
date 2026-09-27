@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, BookOpen, ChevronRight, Zap } from 'lucide-react';
+import { Cpu, BookOpen, ChevronRight, Atom } from 'lucide-react';
 
 export default function LandingPage({ onSelectWorkspace }) {
   return (
@@ -12,11 +12,20 @@ export default function LandingPage({ onSelectWorkspace }) {
       </div>
 
       <div className="z-10 text-center mb-16 space-y-4">
-        <div className="flex items-center justify-center space-x-3 mb-6">
-          <Zap className="w-10 h-10 text-cyan-400" />
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white font-['Space_Grotesk']">
-            QUANTUM <span className="text-cyan-400">LEARN</span>
-          </h1>
+        <div className="flex flex-col items-center justify-center space-y-4 mb-6">
+          <div className="relative flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-500 to-purple-600 p-0.5 shadow-2xl shadow-cyan-500/30">
+            <div className="w-full h-full bg-[#070a19] rounded-[14px] flex items-center justify-center">
+              <Atom className="w-10 h-10 text-cyan-400 animate-spin" style={{ animationDuration: '14s' }} />
+            </div>
+          </div>
+          <div>
+            <h1 className="text-4xl md:text-5xl font-black tracking-wider bg-gradient-to-r from-cyan-400 via-blue-300 to-purple-400 bg-clip-text text-transparent uppercase font-['Space_Grotesk']">
+              QUANTUM RELUM
+            </h1>
+            <p className="text-xs md:text-sm text-gray-400 font-mono mt-2 tracking-widest uppercase">
+              NEURAL NOMADS
+            </p>
+          </div>
         </div>
         <p className="text-lg md:text-xl text-gray-400 font-light max-w-lg mx-auto">
           Explore quantum computing interactively.
