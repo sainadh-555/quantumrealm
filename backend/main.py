@@ -30,8 +30,20 @@ AI_BASE_URL = os.getenv("AI_BASE_URL")
 # Initialize Client
 if AI_API_KEY:
     kwargs = {"api_key": AI_API_KEY}
-    if AI_BASE_URL:
+    
+    # Auto-fallback logic if base URL isn't explicitly set
+    if not AI_BASE_URL:
+        if AI_API_KEY.startswith("gsk_"):
+            kwargs["base_url"] = "https://api.groq.com/openai/v1"
+            if not os.getenv("QUMI_MODEL"):
+                QUMI_MODEL = "llama-3.1-70b-versatile"
+        elif AI_API_KEY.startswith("xai-") or os.getenv("GROK_API_KEY") == AI_API_KEY:
+            kwargs["base_url"] = "https://api.x.ai/v1"
+            if not os.getenv("QUMI_MODEL"):
+                QUMI_MODEL = "grok-beta"
+    else:
         kwargs["base_url"] = AI_BASE_URL
+        
     client = OpenAI(**kwargs)
 else:
     client = None
@@ -381,6 +393,6 @@ You have access to the user's live application state. You can also trigger UI ac
             print(f"[QUMI ERROR] Provider rejected model: {QUMI_MODEL}")
             raise HTTPException(status_code=503, detail="QUMI_MODEL_UNAVAILABLE")
             
-        print(f"[QUMI ERROR] API request failed (safe log)")
+        print(f"[QUMI ERROR] API request failed: {str(e)}")
         raise HTTPException(status_code=500, detail="QUMI_SERVICE_ERROR")
 
