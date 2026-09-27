@@ -44,7 +44,7 @@ export default function App() {
       />
 
       {/* Main Desktop Area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         
         {/* Context-Aware Sidebar */}
         {activeWorkspace !== 'simulation' && (
@@ -58,7 +58,7 @@ export default function App() {
         )}
 
         {/* Primary Workspace View */}
-        <main className="flex-1 relative overflow-hidden">
+        <main className="flex-1 relative overflow-hidden min-h-0 flex flex-col">
           {activeWorkspace === 'simulation' && (
             <SimulationWorkspace
               activeTool={simulationTool}

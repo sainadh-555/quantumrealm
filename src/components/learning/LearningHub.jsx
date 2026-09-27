@@ -44,7 +44,7 @@ export default function LearningHub({
   };
 
   return (
-    <div className="flex-1 max-w-[1720px] w-full mx-auto p-4 sm:p-8 flex flex-col space-y-8 overflow-y-auto select-none">
+    <div className="flex-1 min-h-0 max-w-[1720px] w-full mx-auto p-4 sm:p-8 flex flex-col space-y-8 overflow-y-auto select-none pb-24">
       
       {/* Header Banner */}
       <div className="text-center max-w-3xl mx-auto space-y-3">
