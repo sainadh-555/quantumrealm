@@ -20,7 +20,8 @@ export default function QumiWorkspace({
   onCircuitAction,
   learnerModel,
   learningContext,
-  threeDContext
+  threeDContext,
+  onNavigate
 }) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
