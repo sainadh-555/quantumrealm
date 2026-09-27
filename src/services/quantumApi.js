@@ -8,7 +8,7 @@
  * Team Neural Nomads — Smart India Hackathon 2026
  */
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://quantumrealm.onrender.com';
 
 /**
  * SimulatorProvider Base Class (Multi-Backend Architecture Abstraction)
@@ -86,21 +86,31 @@ export class QBraidProvider extends SimulatorProvider {
  */
 class SimulationEngineManager {
   constructor() {
-    this.primaryProvider = new QiskitAerProvider();
-    this.fallbackProvider = new LocalStatevectorProvider();
-    this.activeProviderName = this.primaryProvider.name;
+    this.providers = {
+      'Qiskit Aer': new QiskitAerProvider(),
+      'Local JS Statevector': new LocalStatevectorProvider(),
+      'PennyLane': new PennyLaneProvider(),
+      'Google Cirq': new CirqProvider(),
+      'qBraid': new QBraidProvider()
+    };
+    this.primaryProvider = this.providers['Qiskit Aer'];
+    this.fallbackProvider = this.providers['Local JS Statevector'];
   }
 
-  async run(circuitData) {
+  async run(circuitData, backendName) {
     const startTime = performance.now();
+    const targetProvider = backendName ? this.providers[backendName] : this.primaryProvider;
+
+    if (!targetProvider) {
+      throw new Error(`Backend ${backendName} is not registered.`);
+    }
+
     try {
-      // 1. Try Primary Backend (Qiskit Aer)
-      return await this.primaryProvider.simulate(circuitData, { timeoutMs: 1800 });
+      return await targetProvider.simulate(circuitData, { timeoutMs: 1800 });
     } catch (error) {
-      console.info(`${this.primaryProvider.name} offline or timed out. Falling back to ${this.fallbackProvider.name}.`, error.message);
-      // 2. Fallback to Local Engine
+      console.info(`${targetProvider.name} failed or is unavailable. Falling back to ${this.fallbackProvider.name}.`, error.message);
       const res = await this.fallbackProvider.simulate(circuitData, { startTime });
-      return { ...res, backend: "Qiskit Aer (Local Mock Service)" };
+      return { ...res, backend: `${this.fallbackProvider.name} (Fallback for ${targetProvider.name})`, error: error.message };
     }
   }
 }
@@ -110,8 +120,8 @@ export const simulatorEngine = new SimulationEngineManager();
 /**
  * Legacy API Bridge (to prevent breaking existing imports)
  */
-export async function runSimulation(circuitData) {
-  return simulatorEngine.run(circuitData);
+export async function runSimulation(circuitData, backendName = null) {
+  return simulatorEngine.run(circuitData, backendName);
 }
 
 /**

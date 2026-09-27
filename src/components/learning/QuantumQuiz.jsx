@@ -36,12 +36,16 @@ export default function QuantumQuiz() {
     setIsAnswered(true);
 
     const currentQ = questions[currentIdx];
-    if (idx === currentQ.correctAnswer) {
+    const isCorrect = idx === currentQ.correctAnswer;
+
+    if (isCorrect) {
       setScore(s => s + 1);
       const xp = currentQ.xp || 50;
       setXpEarned(x => x + xp);
       ProgressService.addXP(xp);
     }
+    
+    ProgressService.recordAnswer(isCorrect, currentQ.conceptId || 'quantum_basics', currentQ);
   };
 
   const nextQuestion = () => {

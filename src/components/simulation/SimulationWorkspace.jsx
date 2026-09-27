@@ -41,6 +41,7 @@ export default function SimulationWorkspace({
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState(null);
   const [circuitError, setCircuitError] = useState(null);
+  const [selectedBackend, setSelectedBackend] = useState('Qiskit Aer');
 
   // New persistent structural layout state
   const [isGatesExpanded, setIsGatesExpanded] = useState(true);
@@ -114,7 +115,7 @@ export default function SimulationWorkspace({
     }
     setIsRunning(true);
     try {
-      const res = await runSimulation(circuit);
+      const res = await runSimulation(circuit, selectedBackend);
       setResults(res);
       ProgressService.addXP(25, 'Executed Quantum Circuit');
       // Automatically expand results if simulation succeeds
@@ -131,8 +132,8 @@ export default function SimulationWorkspace({
   const handleCheckChallenge = () => {
     if (!activeChallenge) return;
     if (activeChallenge.validate(circuit)) {
-      alert(`Challenge Complete! +${activeChallenge.xp} XP`);
       ProgressService.addXP(activeChallenge.xp, `Completed Challenge: ${activeChallenge.title}`);
+      setCircuitError(null);
     } else {
       setCircuitError('Circuit does not meet challenge requirements. Try again!');
     }
@@ -185,7 +186,17 @@ export default function SimulationWorkspace({
             <div className="w-px h-6 bg-white/10"></div>
             <div className="flex flex-col">
               <span className="text-gray-500 text-[10px] uppercase">Backend</span>
-              <span className="text-green-400 font-bold">Local Simulator</span>
+              <select
+                value={selectedBackend}
+                onChange={(e) => setSelectedBackend(e.target.value)}
+                className="bg-transparent text-green-400 font-bold outline-none border-none cursor-pointer p-0 m-0 text-xs appearance-none focus:ring-0"
+                title="Select simulation backend"
+              >
+                <option value="Qiskit Aer" className="bg-[#030511]">Qiskit Aer</option>
+                <option value="Local JS Statevector" className="bg-[#030511]">Local JS Simulator</option>
+                <option value="PennyLane" className="bg-[#030511]">PennyLane</option>
+                <option value="Google Cirq" className="bg-[#030511]">Google Cirq</option>
+              </select>
             </div>
           </div>
 
@@ -227,35 +238,16 @@ export default function SimulationWorkspace({
       <div className="flex-1 flex gap-4 overflow-hidden mb-4">
         
         {/* LEFT PANE: QUANTUM GATES */}
-        <div className={`transition-all duration-300 border border-white/10 rounded-2xl overflow-hidden bg-white/[0.02] flex flex-col ${isGatesExpanded ? 'w-[300px]' : 'w-[50px] items-center'}`}>
-          {isGatesExpanded ? (
-            <div className="flex-1 overflow-y-auto flex flex-col">
-              <div className="flex items-center justify-between p-3 border-b border-white/10">
-                <span className="font-bold text-xs text-gray-400 tracking-wider">QUANTUM GATES</span>
-                <button onClick={() => setIsGatesExpanded(false)} className="p-1 hover:bg-white/10 rounded text-gray-400"><ChevronLeft className="w-4 h-4"/></button>
-              </div>
-              <div className="flex-1 overflow-y-auto pl-2 pr-2 py-2">
-                <GatePalette
-                  selectedGate={selectedGate}
-                  onSelectGate={(gate) => setSelectedGate(selectedGate?.id === gate.id ? null : gate)}
-                  onExplainGate={(gate) => setExplainedGate(gate)}
-                />
-              </div>
+        <div className="w-[300px] shrink-0 border border-white/10 rounded-2xl overflow-hidden bg-white/[0.02] flex flex-col">
+          <div className="flex-1 overflow-y-auto flex flex-col">
+            <div className="flex-1 overflow-y-auto pl-2 pr-2 py-2">
+              <GatePalette
+                selectedGate={selectedGate}
+                onSelectGate={(gate) => setSelectedGate(selectedGate?.id === gate.id ? null : gate)}
+                onExplainGate={(gate) => setExplainedGate(gate)}
+              />
             </div>
-          ) : (
-            <div className="flex-1 py-4 flex flex-col items-center">
-              <button 
-                onClick={() => setIsGatesExpanded(true)} 
-                className="p-2 hover:bg-white/10 rounded-xl text-gray-400 flex flex-col items-center justify-center h-full"
-                title="Expand Quantum Gates"
-              >
-                <ChevronRight className="w-5 h-5 mb-4"/>
-                <div className="text-[10px] font-bold tracking-[0.2em] transform -rotate-90 uppercase whitespace-nowrap mt-16">
-                  Quantum Gates
-                </div>
-              </button>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* CENTER PANE: CIRCUIT CANVAS */}

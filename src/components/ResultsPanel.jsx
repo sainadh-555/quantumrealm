@@ -3,7 +3,7 @@ import ProbabilityChart from './ProbabilityChart';
 import StateVector from './StateVector';
 import BlochSphere from './BlochSphere';
 import CircuitInfo from './CircuitInfo';
-import { BarChart3, Binary, Compass, Info, CheckCircle2, Sparkles } from 'lucide-react';
+import { BarChart3, Binary, Compass, Info, CheckCircle2, Sparkles, Download } from 'lucide-react';
 
 export default function ResultsPanel({ results, circuit, isRunning }) {
   const [activeTab, setActiveTab] = useState('probability');
@@ -45,10 +45,16 @@ export default function ResultsPanel({ results, circuit, isRunning }) {
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 font-mono border border-emerald-500/30">
             {results?.backend || 'Qiskit Aer'}
           </span>
+          {results?.error && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-300 font-mono border border-red-500/30 ml-2">
+              ⚠️ {results.error}
+            </span>
+          )}
         </div>
 
-        {/* Tab Buttons */}
-        <div className="flex items-center space-x-1 bg-white/5 p-1 rounded-xl border border-white/10">
+        {/* Tab Buttons & Actions */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center space-x-1 bg-white/5 p-1 rounded-xl border border-white/10">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -67,6 +73,28 @@ export default function ResultsPanel({ results, circuit, isRunning }) {
               </button>
             );
           })}
+          </div>
+
+          {/* Download Actions */}
+          <div className="flex items-center">
+            <button
+              onClick={() => {
+                const json = JSON.stringify(results, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `quantum_results_${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-colors border border-white/10 ml-2"
+              title="Download Results JSON"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Export Results</span>
+            </button>
+          </div>
         </div>
       </div>
 

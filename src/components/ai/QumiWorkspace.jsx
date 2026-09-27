@@ -97,7 +97,6 @@ export default function QumiWorkspace({
   };
 
   const handleToolAction = async (action) => {
-    // 1. Execute the actual tool
     if (action.type === 'circuit') {
       onCircuitAction?.('BUILD_CIRCUIT', action.data || action.circuitData);
     } else if (action.type === 'navigation') {
@@ -107,7 +106,9 @@ export default function QumiWorkspace({
         console.warn('onNavigate is not defined');
       }
     } else if (action.type === 'quiz') {
-      alert(`Quiz: ${action.data?.question || 'No question provided'}`);
+      if (onNavigate) {
+        onNavigate('quizzes');
+      }
     } else {
       onCircuitAction?.(action.type, action.data || action.circuitData);
     }
