@@ -13,7 +13,15 @@ import {
 } from 'lucide-react';
 import { AIService } from '../../services/AIService';
 
-export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCircuitAction }) {
+export default function QumiWorkspace({ 
+  mode = 'tutor', 
+  circuit, 
+  results, 
+  onCircuitAction,
+  learnerModel,
+  learningContext,
+  threeDContext
+}) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -48,7 +56,11 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
         messages: newMessages.map(m => ({ role: m.role, content: m.content })),
         circuit: circuit || null,
         results: results || null,
-        code: null // If code editor state were passed down, we'd include it here
+        code: null, // If code editor state were passed down, we'd include it here
+        learnerModel: learnerModel || { level: 'beginner', recentTopics: [] },
+        learningContext: learningContext || null,
+        threeDContext: threeDContext || null,
+        mode: mode
       };
 
       // Call the real AI endpoint
@@ -82,9 +94,13 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
   const handleToolAction = async (action) => {
     // 1. Execute the actual tool
     if (action.type === 'circuit') {
-      onCircuitAction?.('BUILD_CIRCUIT', action.circuitData);
+      onCircuitAction?.('BUILD_CIRCUIT', action.data || action.circuitData);
+    } else if (action.type === 'navigation') {
+      alert(`Navigating to ${action.data.module} visualization...`);
+    } else if (action.type === 'quiz') {
+      alert(`Quiz: ${action.data.question}`);
     } else {
-      onCircuitAction?.(action.type, action.circuitData);
+      onCircuitAction?.(action.type, action.data || action.circuitData);
     }
 
     // 2. Add the tool result to messages and query LLM again for confirmation
@@ -96,7 +112,9 @@ export default function QumiWorkspace({ mode = 'tutor', circuit, results, onCirc
     try {
       const context = {
         messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-        circuit, results, code: null
+        circuit, results, code: null,
+        learnerModel: learnerModel || { level: 'beginner', recentTopics: [] },
+        learningContext, threeDContext, mode
       };
       const response = await AIService.askQumi(context);
       

@@ -206,6 +206,9 @@ class QumiRequest(BaseModel):
     circuit: Optional[Dict[str, Any]] = None
     results: Optional[Dict[str, Any]] = None
     code: Optional[str] = None
+    learner_model: Optional[Dict[str, Any]] = None
+    learning_context: Optional[str] = None
+    three_d_context: Optional[Dict[str, Any]] = None
 
 @app.post("/api/qumi")
 def ask_qumi(req: QumiRequest):
@@ -217,16 +220,24 @@ def ask_qumi(req: QumiRequest):
         }
 
     try:
-        system_instruction = """You are Qumi, the Quantum Tutor inside Quantum Relum.
-Your domain is:
-- quantum computing, quantum circuits, qubits, superposition, entanglement, measurement, quantum gates, quantum algorithms, quantum simulation, Qiskit, state vectors, probabilities, Bloch sphere, quantum error correction, quantum hardware concepts, and mathematics directly relevant to quantum computing.
+        system_instruction = """You are Qumi, the Personal Quantum Tutor embedded inside Quantum Relum.
+You are NOT a generic chatbot. Your goal is to behave like a genuinely intelligent, context-aware, adaptive human tutor for quantum computing.
 
-For non-quantum questions (like weather, Java, sports, history), politely state that the topic is outside your domain and redirect the user toward quantum computing. Example: "That's outside my domain. I'm Qumi, your Quantum Tutor. Ask me about quantum computing, circuits, gates, algorithms, Qiskit, or your current simulation."
+CORE TUTORING LOOP:
+OBSERVE -> DIAGNOSE -> UNDERSTAND CONTEXT -> CHOOSE STRATEGY -> EXPLAIN/QUESTION/HINT -> CHECK UNDERSTANDING.
 
-If the user asks to analyze their circuit, you can use the 'analyze_current_circuit' tool or just look at the injected context if available.
-If the user asks to build or modify a circuit, call the appropriate tool (e.g. 'create_circuit'). 
-Do not invent simulation results. If there are no results, tell the user to run the simulation first.
-You are educational, clear, and beginner-friendly."""
+TEACHING RULES:
+1. Optimize for understanding, not just answering quickly. If the user asks a conceptual question or is stuck on a problem, DO NOT immediately reveal the answer. Use a Socratic hint ladder (subtle nudge -> conceptual clue -> relevant gate -> partial solve -> full solution).
+2. Detect common misconceptions (e.g., "measurement reveals a hidden classical value", "entanglement is faster-than-light communication"). Correct them immediately. Explain WHY they are wrong and then explain the correct idea.
+3. Be Never-Boring: If a user repeatedly struggles with a concept, change your teaching strategy (analogy -> visual -> circuit -> math).
+4. Adapt to the user's level (beginner/intermediate/advanced) based on the provided Learner Model. Use active recall and spaced review when appropriate.
+5. Ground your knowledge in the actual Quantum Relum state. Use the circuit, simulation results, or 3D visualizer state provided in the context. Never invent simulation results. If 51% |00> and 49% |11> is provided, explain those exact numbers.
+6. Act as a Circuit Coach. If the user's circuit has errors, identify them, explain why, and tell them how to fix it. Suggest optimizations if you see redundancy (like X followed by X).
+7. If you lack context, say "I don't know" or ask the user to provide it.
+8. Distinguish between teaching modes automatically (Tutor, Socratic, Practice, Circuit Coach, Debugger).
+9. Output formatting: Keep your responses concise (2-4 short paragraphs maximum). Avoid generic chatbot filler like "Great question!" or "Sure!". Be calm, curious, and precise.
+
+You have access to the user's live application state. You can also trigger UI actions using tools if necessary."""
 
         # Inject context into the prompt
         context_prompt = f"CURRENT APPLICATION STATE:\n"
@@ -238,8 +249,14 @@ You are educational, clear, and beginner-friendly."""
         if req.results:
             context_prompt += f"SIMULATION RESULTS: {json.dumps(req.results)}\n"
             
-        if req.code:
-            context_prompt += f"CURRENT CODE: {req.code}\n"
+        if req.learner_model:
+            context_prompt += f"LEARNER MODEL: {json.dumps(req.learner_model)}\n"
+            
+        if req.learning_context:
+            context_prompt += f"ACTIVE LEARNING MODULE: {req.learning_context}\n"
+            
+        if req.three_d_context:
+            context_prompt += f"3D VISUALIZATION CONTEXT: {json.dumps(req.three_d_context)}\n"
             
         openai_messages = [{"role": "system", "content": system_instruction}]
         
@@ -298,6 +315,36 @@ You are educational, clear, and beginner-friendly."""
                             "column": {"type": "integer", "description": "Optional: Specific column to place the gate. If omitted, places at the end."}
                         },
                         "required": ["type", "qubits"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "open_3d_visualization",
+                    "description": "Navigate the user to the 3D Quantum Visualization Lab. Use this when you want to show them a visual geometric representation of a state.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "module": {"type": "string", "description": "Which 3D module to open (e.g., 'qubit', 'superposition', 'entanglement', 'gates')"}
+                        },
+                        "required": ["module"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "start_quiz",
+                    "description": "Ask the user a quick quiz question as a micro-challenge to test their understanding.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "question": {"type": "string", "description": "The quiz question"},
+                            "options": {"type": "array", "items": {"type": "string"}, "description": "Array of multiple choice options"},
+                            "correctIndex": {"type": "integer", "description": "The 0-based index of the correct option"}
+                        },
+                        "required": ["question", "options", "correctIndex"]
                     }
                 }
             }

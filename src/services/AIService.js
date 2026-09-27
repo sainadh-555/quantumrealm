@@ -13,7 +13,7 @@ export class AIService {
    * Calls the secure backend which talks to the real LLM.
    */
   static async askQumi(context) {
-    const { messages, circuit, results, code, mode } = context;
+    const { messages, circuit, results, code, mode, learnerModel, learningContext, threeDContext } = context;
 
     const payload = {
       messages: messages.map(m => ({
@@ -23,7 +23,10 @@ export class AIService {
       circuit: circuit || null,
       results: results || null,
       code: code || null,
-      mode: mode || 'simulation'
+      mode: mode || 'simulation',
+      learner_model: learnerModel || null,
+      learning_context: learningContext || null,
+      three_d_context: threeDContext || null
     };
 
     try {
@@ -46,15 +49,26 @@ export class AIService {
       if (data.toolActions && data.toolActions.length > 0) {
         const tool = data.toolActions[0];
         let label = 'Execute Action';
+        let type = 'circuit';
+
         if (tool.name === 'create_circuit') label = 'Create Circuit';
         if (tool.name === 'add_gate') label = 'Add Gate';
         if (tool.name === 'remove_gate') label = 'Remove Gate';
+        
+        if (tool.name === 'open_3d_visualization') {
+          label = 'Open 3D Viewer';
+          type = 'navigation';
+        }
+        if (tool.name === 'start_quiz') {
+          label = 'Start Quick Quiz';
+          type = 'quiz';
+        }
 
         actionPayload = {
-          name: tool.name, // The raw OpenAI tool name
-          type: 'circuit', // Tells UI to show the Flask icon
+          name: tool.name, 
+          type: type,
           label: label,
-          circuitData: tool.arguments // The generated args (qubits, gates, etc)
+          data: tool.arguments 
         };
       }
 
