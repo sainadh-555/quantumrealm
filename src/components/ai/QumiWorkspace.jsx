@@ -18,6 +18,54 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { circuitToQiskit } from '../../utils/circuitToQiskit';
 
+const normalizeQumiContent = (content) => {
+  if (!content) return "";
+  let text = content;
+
+  // 1. Double escaped backslashes for common greek/math symbols
+  const mathEscapes = ['alpha', 'beta', 'gamma', 'theta', 'phi', 'psi', 'rangle', 'langle', 'otimes', 'rightarrow', 'approx', 'sum', 'sqrt'];
+  mathEscapes.forEach(cmd => {
+    text = text.replace(new RegExp(`\\\\\\\\${cmd}`, 'g'), `\\${cmd}`);
+  });
+
+  // 2. Fix malformed display math `[ ... ]`
+  text = text.replace(/\[\s*(\\|\|)?([^\]]*?\\(?:rangle|langle|alpha|beta|psi|theta|phi)[^\]]*?)\s*\]/g, (match, p1, p2) => {
+    if (match.includes('](')) return match;
+    return `\\[ ${(p1 || '') + p2} \\]`;
+  });
+
+  // 3. Fix malformed inline math `( ... )`
+  text = text.replace(/(^|\s)\(\s*(\\|\|)?([^)]*?\\(?:rangle|langle|alpha|beta|psi|theta|phi)[^)]*?)\s*\)/g, (match, space, p1, p2) => {
+    if (match.includes('](')) return match;
+    return `${space}\\( ${(p1 || '') + p2} \\)`;
+  });
+
+  // 4. Safe Unicode mappings for common quantum notation outside of standard delimiters
+  // This ensures things like |\alpha|^2 or |0\rangle render nicely even if the AI forgot \( \)
+  const unicodeMap = {
+    '\\\\alpha': 'α',
+    '\\\\beta': 'β',
+    '\\\\gamma': 'γ',
+    '\\\\theta': 'θ',
+    '\\\\phi': 'φ',
+    '\\\\psi': 'ψ',
+    '\\\\rangle': '⟩',
+    '\\\\langle': '⟨',
+    '\\\\otimes': '⊗',
+    '\\\\rightarrow': '→',
+    '\\\\approx': '≈',
+    '\\\\sum': '∑',
+    '\\\\sqrt': '√',
+    '\\|\\^2': '|²'
+  };
+
+  for (const [key, val] of Object.entries(unicodeMap)) {
+    text = text.replace(new RegExp(key, 'g'), val);
+  }
+
+  return text;
+};
+
 export default function QumiWorkspace({ 
   mode = 'tutor', 
   circuit, 
@@ -275,7 +323,7 @@ export default function QumiWorkspace({
                         }
                       }}
                     >
-                      {msg.content}
+                      {normalizeQumiContent(msg.content)}
                     </ReactMarkdown>
                   </div>
 
