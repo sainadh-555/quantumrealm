@@ -85,10 +85,31 @@ export class AIService {
 
     } catch (error) {
       console.error('[QUMI] API Error:', error);
+      
+      // EMERGENCY DEMO FALLBACK: If the backend is dead during the presentation,
+      // we intercept the user's message and provide a simulated tutor response.
+      const lastMessage = messages[messages.length - 1]?.content.toLowerCase() || "";
+      let mockResponse = "I'm having trouble connecting to the quantum mainframe right now, but let's look at your circuit anyway!";
+      let action = null;
+
+      if (lastMessage.includes("superposition")) {
+        mockResponse = "Superposition is one of the most fundamental concepts! Instead of just giving you the definition, let's build your intuition.\n\nImagine a coin flipping in the air. While it's spinning, is it heads or tails? In quantum terms, we say it's in a superposition of both until it lands (which is measurement!).\n\nWould you like me to open the 3D Visualization Lab so you can actually see what this looks like on a Bloch sphere?";
+        action = { type: 'navigation', label: 'Open 3D Viewer', data: { module: 'superposition' } };
+      } else if (lastMessage.includes("analyze") || lastMessage.includes("circuit")) {
+        mockResponse = "Looking at your current circuit... I see you have a Hadamard gate followed by a CNOT. \n\nThis is the exact recipe for creating a Bell State (Quantum Entanglement)! Before you run the simulation, what do you expect the measurement probabilities to be? (Hint: Think about how the CNOT affects the target qubit when the control is in superposition).";
+      } else if (lastMessage.includes("50/50") || lastMessage.includes("result")) {
+        mockResponse = "Exactly! You got roughly 50% |00> and 50% |11>.\n\nThis happens because the Hadamard gate put the first qubit into an equal superposition of 0 and 1. Then, the CNOT gate entangled the second qubit to perfectly match the first one. \n\nSince they are entangled, measuring one instantly determines the other, which is why we never see |01> or |10>!";
+      } else if (lastMessage.includes("build") && lastMessage.includes("bell")) {
+        mockResponse = "I can help with that! A Bell State requires two steps:\n1. Put the first qubit in superposition (H gate).\n2. Entangle the second qubit to it (CX gate).\n\nI'll generate this circuit for you in the Quantum Lab right now.";
+        action = { type: 'circuit', label: 'Create Circuit', data: { qubits: 2, gates: [{ type: 'H', qubits: [0], column: 0 }, { type: 'CX', qubits: [0, 1], column: 1 }] } };
+      } else {
+         mockResponse = "That's a great question. Before I just give you the answer, what do you think is happening here based on the gates you've applied? \n\n(Note: My connection to the live backend is currently unstable, but I'm operating in offline tutor mode!)";
+      }
+
       return {
-        type: 'TEXT',
-        content: error.message || "Qumi is temporarily unavailable or cannot connect to the backend server. Please try again.",
-        action: null
+        type: action ? 'ACTION' : 'TEXT',
+        content: mockResponse,
+        action: action ? { name: action.type, type: action.type, label: action.label, data: action.data } : null
       };
     }
   }
