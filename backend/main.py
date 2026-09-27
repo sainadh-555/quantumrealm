@@ -24,7 +24,7 @@ from openai import OpenAI
 
 load_dotenv()
 QUMI_MODEL = os.getenv("QUMI_MODEL", "gpt-4o-mini").strip()
-AI_API_KEY = os.getenv("AI_API_KEY")
+AI_API_KEY = os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("GROK_API_KEY")
 AI_BASE_URL = os.getenv("AI_BASE_URL")
 
 # Initialize Client
@@ -209,7 +209,7 @@ class QumiRequest(BaseModel):
 def ask_qumi(req: QumiRequest):
     if not client:
         return {
-            "message": "Qumi service configuration error: Neither OPENAI_API_KEY nor GROK_API_KEY is set on the backend.",
+            "message": "Qumi is not configured on the backend.",
             "toolActions": [],
             "metadata": {"provider": "none", "model": "none"}
         }
