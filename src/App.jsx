@@ -18,6 +18,25 @@ export default function App() {
   // Cross-workspace context (e.g., from game to simulation)
   const [injectedLabConcept, setInjectedLabConcept] = useState(null);
 
+  // KEEP-ALIVE PING for Render Free Tier Backend
+  React.useEffect(() => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://quantumrealm.onrender.com';
+    const pingBackend = async () => {
+      try {
+        await fetch(`${backendUrl}/health`);
+      } catch (e) {
+        // Silently ignore ping errors
+      }
+    };
+    
+    // Initial ping to wake it up on load
+    pingBackend();
+    
+    // Ping every 5 minutes (300,000 ms) to keep it awake while the app is open
+    const interval = setInterval(pingBackend, 300000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Helper to jump to a simulation tool with a specific concept
   const handleJumpToSimulation = (tool, concept) => {
     if (concept) setInjectedLabConcept(concept);
