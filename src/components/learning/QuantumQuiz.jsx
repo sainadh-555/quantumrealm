@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { QUANTUM_QUESTIONS } from '../../data/quantumQuestions';
 import { ProgressService } from '../../services/ProgressService';
-import { CheckCircle2, HelpCircle, Zap, Trophy, XCircle, ArrowRight, RotateCcw } from 'lucide-react';
+import { CheckCircle2, HelpCircle, Zap, Trophy, XCircle, ArrowRight, RotateCcw, BookOpen } from 'lucide-react';
 
 export default function QuantumQuiz() {
   const [difficulty, setDifficulty] = useState(null); // 'Beginner', 'Intermediate', 'Advanced'
