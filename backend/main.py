@@ -380,5 +380,5 @@ You have access to the user's live application state. You can also trigger UI ac
 
     except Exception as e:
         print(f"[QUMI ERROR] {e}")
-        raise HTTPException(status_code=500, detail="Qumi is temporarily unavailable. Please try again.")
+        raise HTTPException(status_code=500, detail=f"Qumi Error: {str(e)}")
 

@@ -40,7 +40,12 @@ export class AIService {
       });
 
       if (!response.ok) {
-        throw new Error(`Backend returned ${response.status}`);
+        let errorMsg = `Backend returned ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData && errorData.detail) errorMsg = errorData.detail;
+        } catch(e) {}
+        throw new Error(errorMsg);
       }
 
       const data = await response.json();
@@ -82,7 +87,7 @@ export class AIService {
       console.error('[QUMI] API Error:', error);
       return {
         type: 'TEXT',
-        content: "Qumi is temporarily unavailable or cannot connect to the backend server. Please try again.",
+        content: error.message || "Qumi is temporarily unavailable or cannot connect to the backend server. Please try again.",
         action: null
       };
     }
