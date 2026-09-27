@@ -27,15 +27,29 @@ QUMI_MODEL = os.getenv("QUMI_MODEL", "gpt-4o-mini")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GROK_API_KEY = os.getenv("GROK_API_KEY")
 
-# Initialize Client (Supports both OpenAI and Grok)
-if GROK_API_KEY:
+# Initialize Client (Supports OpenAI, xAI Grok, and Groq)
+if GROK_API_KEY and GROK_API_KEY.startswith("gsk_"):
+    # The user actually provided a Groq key!
+    client = OpenAI(
+        api_key=GROK_API_KEY,
+        base_url="https://api.groq.com/openai/v1"
+    )
+    if os.getenv("QUMI_MODEL") is None:
+        QUMI_MODEL = "llama-3.1-70b-versatile"
+elif GROK_API_KEY:
     client = OpenAI(
         api_key=GROK_API_KEY,
         base_url="https://api.x.ai/v1"
     )
-    # Default to a Grok model if the user didn't specify one
     if os.getenv("QUMI_MODEL") is None:
         QUMI_MODEL = "grok-beta"
+elif OPENAI_API_KEY and OPENAI_API_KEY.startswith("gsk_"):
+    client = OpenAI(
+        api_key=OPENAI_API_KEY,
+        base_url="https://api.groq.com/openai/v1"
+    )
+    if os.getenv("QUMI_MODEL") is None:
+        QUMI_MODEL = "llama-3.1-70b-versatile"
 elif OPENAI_API_KEY:
     client = OpenAI(api_key=OPENAI_API_KEY)
 else:
