@@ -32,19 +32,20 @@ if AI_API_KEY:
     kwargs = {"api_key": AI_API_KEY}
     
     # Auto-fallback logic if base URL isn't explicitly set
+    valid_groq_models = ["llama-3.1-70b-versatile", "llama-3.1-8b-instant", "llama3-70b-8192", "llama3-8b-8192", "mixtral-8x7b-32768", "gemma2-9b-it", "gemma-7b-it"]
     if not AI_BASE_URL:
         if AI_API_KEY.startswith("gsk_"):
             kwargs["base_url"] = "https://api.groq.com/openai/v1"
-            if "gpt" in QUMI_MODEL or "openai" in QUMI_MODEL:
-                QUMI_MODEL = "llama-3.1-8b-instant"
+            if QUMI_MODEL not in valid_groq_models:
+                QUMI_MODEL = "llama3-8b-8192"
         elif AI_API_KEY.startswith("xai-") or os.getenv("GROK_API_KEY") == AI_API_KEY:
             kwargs["base_url"] = "https://api.x.ai/v1"
             if "gpt" in QUMI_MODEL or "openai" in QUMI_MODEL:
                 QUMI_MODEL = "grok-beta"
     else:
         kwargs["base_url"] = AI_BASE_URL
-        if "groq.com" in AI_BASE_URL and ("gpt" in QUMI_MODEL or "openai" in QUMI_MODEL):
-            QUMI_MODEL = "llama-3.1-8b-instant"
+        if "groq.com" in AI_BASE_URL and QUMI_MODEL not in valid_groq_models:
+            QUMI_MODEL = "llama3-8b-8192"
         
     client = OpenAI(**kwargs)
 else:
