@@ -43,8 +43,7 @@ export default function SimulationWorkspace({
   const [circuitError, setCircuitError] = useState(null);
   const [selectedBackend, setSelectedBackend] = useState('Qiskit Aer');
 
-  // New persistent structural layout state
-  const [isGatesExpanded, setIsGatesExpanded] = useState(true);
+  // Persistent structural layout state
   const [isCodeEditorExpanded, setIsCodeEditorExpanded] = useState(false);
   const [isBottomExpanded, setIsBottomExpanded] = useState(false);
   const [bottomPaneHeight, setBottomPaneHeight] = useState(350);
@@ -104,6 +103,7 @@ export default function SimulationWorkspace({
     setHistoryIndex(newHistory.length - 1);
     setCircuit(newCircuit);
     setCircuitError(null);
+    setResults(null);
   };
 
   const handleRunSimulation = async () => {
@@ -238,7 +238,7 @@ export default function SimulationWorkspace({
       <div className="flex-1 flex gap-4 overflow-hidden mb-4">
         
         {/* LEFT PANE: QUANTUM GATES */}
-        <div className="w-[300px] shrink-0 border border-white/10 rounded-2xl overflow-hidden bg-white/[0.02] flex flex-col">
+        <div className="hidden lg:flex w-[300px] shrink-0 border border-white/10 rounded-2xl overflow-hidden bg-white/[0.02] flex-col">
           <div className="flex-1 overflow-y-auto flex flex-col">
             <div className="flex-1 overflow-y-auto pl-2 pr-2 py-2">
               <GatePalette
@@ -273,10 +273,17 @@ export default function SimulationWorkspace({
             onClearCircuit={() => { updateCircuitState({ ...circuit, operations: [] }); setResults(null); setSelectedOpId(null); }}
             onDropGate={(gateId, qubitIdx, colIdx) => {
               const existingOps = [...circuit.operations];
-              if (gateId === 'CX' || gateId === 'CZ') {
+              if (gateId === 'CX' || gateId === 'CZ' || gateId === 'SWAP') {
                 const targetQubit = (qubitIdx + 1) % circuit.qubits;
                 const newOp = { id: `op-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, gate: gateId, control: qubitIdx, target: targetQubit, column: colIdx };
                 const cleanedOps = existingOps.filter(op => !(op.column === colIdx && (op.qubit === qubitIdx || op.qubit === targetQubit || op.control === qubitIdx || op.target === targetQubit)));
+                cleanedOps.push(newOp);
+                updateCircuitState({ ...circuit, operations: cleanedOps });
+                setSelectedOpId(newOp.id);
+              } else if (gateId === 'RX' || gateId === 'RY' || gateId === 'RZ') {
+                const defaultTheta = Math.PI / 2;
+                const newOp = { id: `op-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, gate: gateId, qubit: qubitIdx, column: colIdx, params: { theta: defaultTheta } };
+                const cleanedOps = existingOps.filter(op => !(op.column === colIdx && (op.qubit === qubitIdx || op.control === qubitIdx || op.target === qubitIdx)));
                 cleanedOps.push(newOp);
                 updateCircuitState({ ...circuit, operations: cleanedOps });
                 setSelectedOpId(newOp.id);
@@ -311,7 +318,7 @@ export default function SimulationWorkspace({
 
         {/* RIGHT PANE: CODE EDITOR */}
         {isCodeEditorExpanded && (
-          <div className="w-[400px] shrink-0 border border-white/10 rounded-2xl bg-[#0a0718] flex flex-col h-full animate-in slide-in-from-right-4 duration-300 overflow-hidden">
+          <div className="hidden xl:flex w-[400px] shrink-0 border border-white/10 rounded-2xl bg-[#0a0718] flex-col h-full animate-in slide-in-from-right-4 duration-300 overflow-hidden">
             <CodeEditor
               circuit={circuit}
               onResetCircuit={() => updateCircuitState(PRESET_CIRCUITS[0])}
@@ -377,9 +384,9 @@ export default function SimulationWorkspace({
       </div>
 
       {/* QUMI ASSISTANT OVERLAY */}
-      <div className="absolute bottom-6 right-6 z-50 flex flex-col items-end gap-3 pointer-events-none">
+      <div className="absolute bottom-6 right-6 left-6 sm:left-auto z-50 flex flex-col items-end gap-3 pointer-events-none">
         {isQumiExpanded && (
-          <div className="w-[400px] h-[550px] rounded-2xl border border-purple-500/30 overflow-hidden bg-[#0a0718] shadow-2xl animate-in slide-in-from-bottom-4 pointer-events-auto flex flex-col">
+          <div className="w-full sm:w-[400px] h-[70vh] sm:h-[550px] rounded-2xl border border-purple-500/30 overflow-hidden bg-[#0a0718] shadow-2xl animate-in slide-in-from-bottom-4 pointer-events-auto flex flex-col">
             <div className="flex items-center justify-between p-3 border-b border-purple-500/20 bg-purple-500/10 shrink-0">
               <span className="font-bold text-sm text-purple-300 flex items-center gap-2 tracking-wide">
                 <Bot className="w-4 h-4"/> QUMI AI ASSISTANT
@@ -394,7 +401,11 @@ export default function SimulationWorkspace({
                 results={results}
                 onNavigate={onNavigateTo3D}
                 onCircuitAction={(actionType, circuitData) => {
-                  if (circuitData) {
+                  if (actionType === 'SIMULATE_CIRCUIT') {
+                    handleRunSimulation();
+                  } else if (actionType === 'CLEAR_CIRCUIT') {
+                    updateCircuitState({ ...circuit, operations: [] });
+                  } else if (circuitData) {
                     updateCircuitState(circuitData);
                   }
                 }}

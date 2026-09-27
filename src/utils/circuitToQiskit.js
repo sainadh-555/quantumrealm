@@ -82,6 +82,9 @@ export function circuitToQiskit(circuit) {
       case 'RZ':
         lines.push(`qc.rz(${op.params?.theta || '0'}, ${op.qubit})`);
         break;
+      case 'BARRIER':
+        lines.push(`qc.barrier()`);
+        break;
       case 'RESET':
         lines.push(`qc.reset(${op.qubit})`);
         break;

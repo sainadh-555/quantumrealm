@@ -38,9 +38,29 @@ export default function InstructorDashboard() {
             </h1>
             <p className="text-gray-400 mt-2 font-mono text-sm">
               Quantum Realm Class Analytics & Performance Tracking
+              <span className="ml-2 px-2 py-0.5 text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full">Demo Data</span>
             </p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 text-sm font-mono transition-colors">
+          <button 
+            onClick={() => {
+              const report = {
+                exportedAt: new Date().toISOString(),
+                platform: 'Quantum Realm',
+                note: 'Demo analytics - single-user local data with simulated students',
+                classStats: { totalStudents: classData.totalStudents, activeThisWeek: classData.activeThisWeek, averageScore: classData.averageScore, completedModules: classData.completedModules, weakestConcept: classData.weakestConcept },
+                students: classData.students,
+                localUserProgress: stats
+              };
+              const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `quantum_realm_class_report_${Date.now()}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 text-sm font-mono transition-colors"
+          >
             <Filter className="w-4 h-4" /> Export Report
           </button>
         </div>

@@ -110,9 +110,12 @@ export default function QuantumQuiz() {
     if (percentage >= 80) message = "Excellent work!";
     else if (percentage >= 50) message = "Good job!";
 
+    const recommendation = ProgressService.getSmartRecommendation();
+    const recentMistakes = ProgressService.getState().recentMistakes.slice(0, 3);
+
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center p-6 bg-[#030511]">
-        <div className="max-w-md w-full p-8 rounded-3xl bg-[#0a0718] border border-cyan-500/30 text-center shadow-2xl relative overflow-hidden">
+      <div className="w-full h-full flex flex-col items-center justify-center p-6 bg-[#030511] overflow-y-auto">
+        <div className="max-w-lg w-full p-8 rounded-3xl bg-[#0a0718] border border-cyan-500/30 text-center shadow-2xl relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 pointer-events-none" />
           
           <div className="w-24 h-24 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(0,242,254,0.3)]">
@@ -124,7 +127,7 @@ export default function QuantumQuiz() {
           </h2>
           <p className="text-cyan-400 font-mono text-lg mb-6">{message}</p>
           
-          <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
               <div className="text-sm text-gray-400 mb-1">Score</div>
               <div className="text-2xl font-bold text-white">{score} <span className="text-gray-500 text-base">/ {questions.length}</span></div>
@@ -136,6 +139,27 @@ export default function QuantumQuiz() {
                 +{xpEarned}
               </div>
             </div>
+          </div>
+
+          {/* Weak Topics */}
+          {recentMistakes.length > 0 && (
+            <div className="mb-6 text-left p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20">
+              <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-2">Needs Review</h4>
+              <ul className="space-y-1">
+                {recentMistakes.map((m, i) => (
+                  <li key={i} className="text-xs text-gray-400 flex items-center gap-2">
+                    <XCircle className="w-3 h-3 text-rose-400 shrink-0" />
+                    <span className="line-clamp-1">{m.concept || m.question}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Recommendation */}
+          <div className="mb-6 text-left p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
+            <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">Qumi Recommends</h4>
+            <p className="text-sm text-gray-300">{recommendation.text}</p>
           </div>
           
           <button

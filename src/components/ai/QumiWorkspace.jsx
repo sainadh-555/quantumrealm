@@ -16,6 +16,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
+import { circuitToQiskit } from '../../utils/circuitToQiskit';
 
 export default function QumiWorkspace({ 
   mode = 'tutor', 
@@ -61,7 +62,7 @@ export default function QumiWorkspace({
         messages: newMessages.map(m => ({ role: m.role, content: m.content })),
         circuit: circuit || null,
         results: results || null,
-        code: null, // If code editor state were passed down, we'd include it here
+        code: circuit ? circuitToQiskit(circuit) : null,
         learnerModel: learnerModel || { level: 'beginner', recentTopics: [] },
         learningContext: learningContext || null,
         threeDContext: threeDContext || null,
@@ -109,6 +110,10 @@ export default function QumiWorkspace({
       if (onNavigate) {
         onNavigate('quizzes');
       }
+    } else if (action.type === 'simulate') {
+      onCircuitAction?.('SIMULATE_CIRCUIT');
+    } else if (action.type === 'clear_circuit') {
+      onCircuitAction?.('CLEAR_CIRCUIT');
     } else {
       onCircuitAction?.(action.type, action.data || action.circuitData);
     }
@@ -122,7 +127,7 @@ export default function QumiWorkspace({
     try {
       const context = {
         messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-        circuit, results, code: null,
+        circuit, results, code: circuit ? circuitToQiskit(circuit) : null,
         learnerModel: learnerModel || { level: 'beginner', recentTopics: [] },
         learningContext, threeDContext, mode
       };

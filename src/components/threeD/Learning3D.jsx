@@ -87,19 +87,17 @@ export default function Learning3D({ onNavigateBack, onOpenInLab }) {
   };
 
   const handleUpdateManualState = (newTheta, newPhi) => {
-    // Advanced: In real quantum computing, you'd apply an RY(theta) and RZ(phi).
-    // For this lab, we can simulate an arbitrary state directly by resetting and applying U gates if our simulator supported it.
-    // Our client simulator supports Rx, Ry, Rz? Let's assume we can just pass an alert for now, or implement U3.
-    // Actually, simulateCircuitClientSide doesn't natively expose direct theta/phi setting without RY/RZ gates.
-    // Let's implement RY and RZ dynamically by adding them to the circuit.
-    setCircuit(prev => {
-      const col = prev.operations.length;
-      return {
-        ...prev,
-        operations: [...prev.operations, { gate: 'RESET', qubit: 0, column: col }]
-      }
+    // Use real RY(theta) and RZ(phi) gates to set an arbitrary single-qubit state
+    setCircuit({
+      qubits: 1,
+      operations: [
+        { gate: 'RY', qubit: 0, column: 0, params: { theta: newTheta } },
+        { gate: 'RZ', qubit: 0, column: 1, params: { theta: newPhi } }
+      ]
     });
-    setLastAction(`Manually updated Phase (φ=${(newPhi * 180 / Math.PI).toFixed(0)}°) and Amplitude (θ=${(newTheta * 180 / Math.PI).toFixed(0)}°). Note: Continuous parameters typically require parameterized gates like RY/RZ.`);
+    setMeasuredState(null);
+    setShotsResult(null);
+    setLastAction(`Applied RY(${(newTheta * 180 / Math.PI).toFixed(0)}°) and RZ(${(newPhi * 180 / Math.PI).toFixed(0)}°) to prepare an arbitrary quantum state.`);
   };
 
   const handleReset = () => {
@@ -154,7 +152,13 @@ export default function Learning3D({ onNavigateBack, onOpenInLab }) {
   };
 
   const handleAskQumi = () => {
-    alert(`Qumi: ${lastAction} The state is mathematically determined by the probability amplitudes of the basis states.`);
+    // Navigate to the Qumi tutor in the Learning workspace
+    // The parent LearningWorkspace doesn't pass a direct setActiveTool, but onOpenInLab
+    // navigates to simulation. We use onNavigateBack to go to learn, then Qumi can be accessed.
+    // For a better UX, we just navigate back which triggers the sidebar where Qumi is available.
+    if (onNavigateBack) {
+      onNavigateBack();
+    }
   };
 
   // Derive visual data safely
@@ -314,7 +318,7 @@ export default function Learning3D({ onNavigateBack, onOpenInLab }) {
               <Bot className="w-3.5 h-3.5" /> Ask Qumi
             </button>
             <button
-              onClick={() => {}}
+              onClick={() => onOpenInLab && onOpenInLab(activeModule === 'bell' ? 'entanglement' : 'superposition')}
               className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 border border-white/10 transition-all"
             >
               <BookOpen className="w-3.5 h-3.5" /> Read More

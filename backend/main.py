@@ -23,38 +23,16 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
-QUMI_MODEL = os.getenv("QUMI_MODEL", "openai/gpt-oss-20b").strip()
+QUMI_MODEL = os.getenv("QUMI_MODEL", "gpt-4o-mini").strip()
+AI_API_KEY = os.getenv("AI_API_KEY")
+AI_BASE_URL = os.getenv("AI_BASE_URL")
 
-if QUMI_MODEL == "llama-3.1-8b-instant" or QUMI_MODEL == "llama3-8b-8192":
-    print("[WARNING] Deprecated Qumi model detected. Use openai/gpt-oss-20b.")
-    QUMI_MODEL = "openai/gpt-oss-20b"
-
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-GROK_API_KEY = os.getenv("GROK_API_KEY")
-
-# Initialize Client (Supports OpenAI, xAI Grok, and Groq)
-if GROK_API_KEY and GROK_API_KEY.startswith("gsk_"):
-    # The user actually provided a Groq key!
-    client = OpenAI(
-        api_key=GROK_API_KEY,
-        base_url="https://api.groq.com/openai/v1"
-    )
-elif GROK_API_KEY:
-    client = OpenAI(
-        api_key=GROK_API_KEY,
-        base_url="https://api.x.ai/v1"
-    )
-    if os.getenv("QUMI_MODEL") is None:
-        QUMI_MODEL = "grok-beta"
-elif OPENAI_API_KEY and OPENAI_API_KEY.startswith("gsk_"):
-    client = OpenAI(
-        api_key=OPENAI_API_KEY,
-        base_url="https://api.groq.com/openai/v1"
-    )
-    if os.getenv("QUMI_MODEL") is None:
-        QUMI_MODEL = "llama-3.1-70b-versatile"
-elif OPENAI_API_KEY:
-    client = OpenAI(api_key=OPENAI_API_KEY)
+# Initialize Client
+if AI_API_KEY:
+    kwargs = {"api_key": AI_API_KEY}
+    if AI_BASE_URL:
+        kwargs["base_url"] = AI_BASE_URL
+    client = OpenAI(**kwargs)
 else:
     client = None
 

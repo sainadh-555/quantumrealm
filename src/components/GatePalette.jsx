@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { QUANTUM_GATES, GATE_CATEGORIES } from '../data/quantumGates';
 import GateItem from './GateItem';
-import { Layers, ChevronLeft, ChevronRight, Search, Sparkles } from 'lucide-react';
+import { Layers, Search, Sparkles } from 'lucide-react';
 
 export default function GatePalette({ selectedGate, onSelectGate, onExplainGate }) {
-  const [collapsed, setCollapsed] = useState(false);
   const [search, setSearch] = useState('');
 
   const filteredGates = QUANTUM_GATES.filter(g =>
@@ -13,8 +12,16 @@ export default function GatePalette({ selectedGate, onSelectGate, onExplainGate 
   );
 
   const singleQubitGates = filteredGates.filter(g => g.category === GATE_CATEGORIES.SINGLE_QUBIT);
+  const rotationGates = filteredGates.filter(g => g.category === GATE_CATEGORIES.ROTATION);
   const controlledGates = filteredGates.filter(g => g.category === GATE_CATEGORIES.CONTROLLED);
   const otherGates = filteredGates.filter(g => g.category === GATE_CATEGORIES.OTHER);
+
+  const sections = [
+    { title: 'SINGLE QUBIT', gates: singleQubitGates, countLabel: `${singleQubitGates.length} Gates`, color: 'text-gray-400' },
+    { title: 'ROTATION', gates: rotationGates, countLabel: 'Parametric', color: 'text-orange-400/80' },
+    { title: 'MULTI-QUBIT', gates: controlledGates, countLabel: '2-Qubit', color: 'text-pink-400/80' },
+    { title: 'UTILITY / MEASURE', gates: otherGates, countLabel: 'Register', color: 'text-emerald-400/80' },
+  ];
 
   return (
     <aside className="flex flex-col h-full overflow-hidden">
@@ -49,68 +56,27 @@ export default function GatePalette({ selectedGate, onSelectGate, onExplainGate 
 
       {/* Gates List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-5">
-        {/* Single Qubit Gates */}
-        {singleQubitGates.length > 0 && (
-          <div>
-            <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 font-mono flex items-center justify-between">
-              <span>SINGLE QUBIT</span>
-              <span className="text-[10px] text-gray-500">7 Gates</span>
-            </h4>
-            <div className="space-y-2">
-              {singleQubitGates.map((gate) => (
-                <GateItem
-                  key={gate.id}
-                  gate={gate}
-                  onSelectGate={onSelectGate}
-                  onExplainGate={onExplainGate}
-                  isSelected={selectedGate?.id === gate.id}
-                />
-              ))}
+        {sections.map(section => (
+          section.gates.length > 0 && (
+            <div key={section.title}>
+              <h4 className={`text-[11px] font-bold uppercase tracking-wider mb-2 font-mono flex items-center justify-between ${section.color}`}>
+                <span>{section.title}</span>
+                <span className="text-[10px] opacity-60">{section.countLabel}</span>
+              </h4>
+              <div className="space-y-2">
+                {section.gates.map((gate) => (
+                  <GateItem
+                    key={gate.id}
+                    gate={gate}
+                    onSelectGate={onSelectGate}
+                    onExplainGate={onExplainGate}
+                    isSelected={selectedGate?.id === gate.id}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* Controlled Gates */}
-        {controlledGates.length > 0 && (
-          <div>
-            <h4 className="text-[11px] font-bold text-pink-400/80 uppercase tracking-wider mb-2 font-mono flex items-center justify-between">
-              <span>CONTROLLED GATES</span>
-              <span className="text-[10px] text-pink-500/60">2-Qubit</span>
-            </h4>
-            <div className="space-y-2">
-              {controlledGates.map((gate) => (
-                <GateItem
-                  key={gate.id}
-                  gate={gate}
-                  onSelectGate={onSelectGate}
-                  onExplainGate={onExplainGate}
-                  isSelected={selectedGate?.id === gate.id}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Other Gates */}
-        {otherGates.length > 0 && (
-          <div>
-            <h4 className="text-[11px] font-bold text-emerald-400/80 uppercase tracking-wider mb-2 font-mono flex items-center justify-between">
-              <span>OTHER / MEASURE</span>
-              <span className="text-[10px] text-emerald-500/60">Register</span>
-            </h4>
-            <div className="space-y-2">
-              {otherGates.map((gate) => (
-                <GateItem
-                  key={gate.id}
-                  gate={gate}
-                  onSelectGate={onSelectGate}
-                  onExplainGate={onExplainGate}
-                  isSelected={selectedGate?.id === gate.id}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+          )
+        ))}
       </div>
     </aside>
   );

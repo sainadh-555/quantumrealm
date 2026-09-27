@@ -59,6 +59,8 @@ export class AIService {
         if (tool.name === 'create_circuit') label = 'Create Circuit';
         if (tool.name === 'add_gate') label = 'Add Gate';
         if (tool.name === 'remove_gate') label = 'Remove Gate';
+        if (tool.name === 'simulate_circuit') { label = 'Run Simulation'; type = 'simulate'; }
+        if (tool.name === 'clear_circuit') { label = 'Clear Circuit'; type = 'clear_circuit'; }
         
         if (tool.name === 'open_3d_visualization') {
           label = 'Open 3D Viewer';

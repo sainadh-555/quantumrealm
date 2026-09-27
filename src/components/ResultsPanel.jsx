@@ -3,7 +3,8 @@ import ProbabilityChart from './ProbabilityChart';
 import StateVector from './StateVector';
 import BlochSphere from './BlochSphere';
 import CircuitInfo from './CircuitInfo';
-import { BarChart3, Binary, Compass, Info, CheckCircle2, Sparkles, Download } from 'lucide-react';
+import { BarChart3, Binary, Compass, Info, CheckCircle2, Sparkles, Download, Copy, Code, FileJson } from 'lucide-react';
+import { circuitToQiskit } from '../utils/circuitToQiskit';
 
 export default function ResultsPanel({ results, circuit, isRunning }) {
   const [activeTab, setActiveTab] = useState('probability');
@@ -76,7 +77,49 @@ export default function ResultsPanel({ results, circuit, isRunning }) {
           </div>
 
           {/* Download Actions */}
-          <div className="flex items-center">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                const code = circuitToQiskit(circuit);
+                navigator.clipboard.writeText(code);
+              }}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-colors border border-white/10 ml-2"
+              title="Copy Qiskit Code"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => {
+                const code = circuitToQiskit(circuit);
+                const blob = new Blob([code], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `circuit_${Date.now()}.py`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-colors border border-white/10"
+              title="Download Qiskit Code"
+            >
+              <Code className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => {
+                const json = JSON.stringify(circuit, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `quantum_circuit_${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-colors border border-white/10"
+              title="Export Circuit JSON"
+            >
+              <FileJson className="w-3.5 h-3.5" />
+            </button>
             <button
               onClick={() => {
                 const json = JSON.stringify(results, null, 2);
@@ -88,11 +131,10 @@ export default function ResultsPanel({ results, circuit, isRunning }) {
                 a.click();
                 URL.revokeObjectURL(url);
               }}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-colors border border-white/10 ml-2"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-colors border border-white/10"
               title="Download Results JSON"
             >
               <Download className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Export Results</span>
             </button>
           </div>
         </div>

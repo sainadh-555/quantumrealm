@@ -264,7 +264,62 @@ export function simulateCircuitClientSide(circuit, startTime = performance.now()
       }
     }
 
-    // 2. Controlled Gates
+    // 2. Rotation Gates: RX, RY, RZ
+    else if (['RX', 'RY', 'RZ'].includes(gate)) {
+      const q = op.qubit;
+      if (q === undefined || q < 0 || q >= numQubits) continue;
+      const bitMask = 1 << q;
+      const theta = parseFloat(op.params?.theta) || 0;
+      const cosHalf = Math.cos(theta / 2);
+      const sinHalf = Math.sin(theta / 2);
+
+      if (gate === 'RX') {
+        // RX(θ) = [[cos(θ/2), -i·sin(θ/2)], [-i·sin(θ/2), cos(θ/2)]]
+        for (let i = 0; i < dim; i++) {
+          if ((i & bitMask) === 0) {
+            const j = i | bitMask;
+            const r0 = real[i], m0 = imag[i];
+            const r1 = real[j], m1 = imag[j];
+            // new|0⟩ = cos(θ/2)*|0⟩ - i·sin(θ/2)*|1⟩
+            real[i] = cosHalf * r0 + sinHalf * m1;
+            imag[i] = cosHalf * m0 - sinHalf * r1;
+            // new|1⟩ = -i·sin(θ/2)*|0⟩ + cos(θ/2)*|1⟩
+            real[j] = sinHalf * m0 + cosHalf * r1;
+            imag[j] = -sinHalf * r0 + cosHalf * m1;
+          }
+        }
+      } else if (gate === 'RY') {
+        // RY(θ) = [[cos(θ/2), -sin(θ/2)], [sin(θ/2), cos(θ/2)]]
+        for (let i = 0; i < dim; i++) {
+          if ((i & bitMask) === 0) {
+            const j = i | bitMask;
+            const r0 = real[i], m0 = imag[i];
+            const r1 = real[j], m1 = imag[j];
+            real[i] = cosHalf * r0 - sinHalf * r1;
+            imag[i] = cosHalf * m0 - sinHalf * m1;
+            real[j] = sinHalf * r0 + cosHalf * r1;
+            imag[j] = sinHalf * m0 + cosHalf * m1;
+          }
+        }
+      } else if (gate === 'RZ') {
+        // RZ(θ) = [[e^(-iθ/2), 0], [0, e^(iθ/2)]]
+        for (let i = 0; i < dim; i++) {
+          if ((i & bitMask) === 0) {
+            // |0⟩ component: multiply by e^(-iθ/2)
+            const r0 = real[i], m0 = imag[i];
+            real[i] = cosHalf * r0 + sinHalf * m0;
+            imag[i] = cosHalf * m0 - sinHalf * r0;
+          } else {
+            // |1⟩ component: multiply by e^(iθ/2)
+            const r1 = real[i], m1 = imag[i];
+            real[i] = cosHalf * r1 - sinHalf * m1;
+            imag[i] = cosHalf * m1 + sinHalf * r1;
+          }
+        }
+      }
+    }
+
+    // 3. Controlled Gates
     else if (gate === 'CX') {
       const c = op.control;
       const t = op.target;
@@ -297,7 +352,29 @@ export function simulateCircuitClientSide(circuit, startTime = performance.now()
           imag[i] = -imag[i];
         }
       }
+    } else if (gate === 'SWAP') {
+      const c = op.control !== undefined ? op.control : op.qubit;
+      const t = op.target;
+      if (c === undefined || t === undefined || c === t || c >= numQubits || t >= numQubits) continue;
+
+      const cMask = 1 << c;
+      const tMask = 1 << t;
+
+      for (let i = 0; i < dim; i++) {
+        // Only swap when the two qubits differ (one is 0, other is 1)
+        const cBit = (i & cMask) !== 0;
+        const tBit = (i & tMask) !== 0;
+        if (cBit && !tBit) {
+          const j = (i ^ cMask) | tMask; // flip c to 0 and t to 1
+          const r0 = real[i], m0 = imag[i];
+          real[i] = real[j];
+          imag[i] = imag[j];
+          real[j] = r0;
+          imag[j] = m0;
+        }
+      }
     }
+    // BARRIER is a no-op (visual separator only)
   }
 
   // 3. Compute Probabilities & Statevector Output
@@ -432,6 +509,7 @@ export function simulateCircuitClientSide(circuit, startTime = performance.now()
     success: true,
     counts,
     probabilities,
+    exactProbabilities: Array.from(exactProbabilities),
     statevector,
     blochStates,
     execution_time: executionTime,

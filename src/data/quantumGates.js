@@ -1,5 +1,6 @@
 export const GATE_CATEGORIES = {
   SINGLE_QUBIT: 'Single Qubit',
+  ROTATION: 'Rotation',
   CONTROLLED: 'Controlled',
   OTHER: 'Other',
 };
@@ -72,19 +73,52 @@ export const QUANTUM_GATES = [
     matrix: '[[1, 0], [0, e^(iπ/4)]]',
     detail: 'Also known as the ∜Z gate. Crucial for universal quantum computing.'
   },
+
+  // Rotation Gates
   {
-    id: 'I',
-    name: 'Identity',
-    symbol: 'I',
-    category: GATE_CATEGORIES.SINGLE_QUBIT,
-    color: 'bg-slate-500/20 border-slate-400 text-slate-300 hover:bg-slate-500/30',
-    badgeColor: 'bg-slate-600 text-white',
-    description: 'No-operation (NOP) gate.',
-    matrix: '[[1, 0], [0, 1]]',
-    detail: 'Leaves the qubit state completely unchanged.'
+    id: 'RX',
+    name: 'Rotation X',
+    symbol: 'Rx',
+    category: GATE_CATEGORIES.ROTATION,
+    color: 'bg-orange-500/20 border-orange-400 text-orange-300 hover:bg-orange-500/30',
+    badgeColor: 'bg-orange-500 text-black',
+    description: 'Rotates qubit around the X-axis by angle θ.',
+    matrix: '[[cos(θ/2), -i·sin(θ/2)], [-i·sin(θ/2), cos(θ/2)]]',
+    detail: 'Parametric rotation gate around the X-axis of the Bloch sphere. The angle θ determines the rotation amount. RX(π) = X gate.',
+    hasParam: true,
+    paramName: 'θ',
+    defaultParam: Math.PI / 2
+  },
+  {
+    id: 'RY',
+    name: 'Rotation Y',
+    symbol: 'Ry',
+    category: GATE_CATEGORIES.ROTATION,
+    color: 'bg-rose-500/20 border-rose-400 text-rose-300 hover:bg-rose-500/30',
+    badgeColor: 'bg-rose-500 text-white',
+    description: 'Rotates qubit around the Y-axis by angle θ.',
+    matrix: '[[cos(θ/2), -sin(θ/2)], [sin(θ/2), cos(θ/2)]]',
+    detail: 'Parametric rotation gate around the Y-axis of the Bloch sphere. Useful for preparing arbitrary quantum states. RY(π) = Y gate.',
+    hasParam: true,
+    paramName: 'θ',
+    defaultParam: Math.PI / 2
+  },
+  {
+    id: 'RZ',
+    name: 'Rotation Z',
+    symbol: 'Rz',
+    category: GATE_CATEGORIES.ROTATION,
+    color: 'bg-pink-500/20 border-pink-400 text-pink-300 hover:bg-pink-500/30',
+    badgeColor: 'bg-pink-500 text-white',
+    description: 'Rotates qubit around the Z-axis by angle θ.',
+    matrix: '[[e^(-iθ/2), 0], [0, e^(iθ/2)]]',
+    detail: 'Parametric rotation gate around the Z-axis of the Bloch sphere. Modifies relative phase without changing measurement probabilities.',
+    hasParam: true,
+    paramName: 'θ',
+    defaultParam: Math.PI / 2
   },
 
-  // Controlled Gates
+  // Controlled / Multi-Qubit Gates
   {
     id: 'CX',
     name: 'Controlled-NOT',
@@ -109,8 +143,20 @@ export const QUANTUM_GATES = [
     matrix: '4x4 Controlled Phase Matrix',
     detail: 'Applies a Z gate (phase flip) to the target qubit if the control qubit is |1⟩.'
   },
+  {
+    id: 'SWAP',
+    name: 'SWAP',
+    symbol: 'SW',
+    category: GATE_CATEGORIES.CONTROLLED,
+    isMultiQubit: true,
+    color: 'bg-sky-500/20 border-sky-400 text-sky-300 hover:bg-sky-500/30',
+    badgeColor: 'bg-sky-500 text-black',
+    description: 'Swaps the states of two qubits.',
+    matrix: '4x4 Permutation Matrix',
+    detail: 'Exchanges the quantum states of two qubits. Equivalent to three consecutive CNOT gates.'
+  },
 
-  // Other Gates
+  // Utility / Measurement Gates
   {
     id: 'MEASURE',
     name: 'Measurement',
@@ -132,5 +178,16 @@ export const QUANTUM_GATES = [
     description: 'Resets qubit back to state |0⟩.',
     matrix: 'Reset Operation',
     detail: 'Resets the target qubit back to ground state |0⟩ regardless of its previous state.'
+  },
+  {
+    id: 'BARRIER',
+    name: 'Barrier',
+    symbol: '▐',
+    category: GATE_CATEGORIES.OTHER,
+    color: 'bg-gray-500/20 border-gray-400 text-gray-300 hover:bg-gray-500/30',
+    badgeColor: 'bg-gray-600 text-white',
+    description: 'Visual separator for circuit optimization.',
+    matrix: 'Identity',
+    detail: 'Prevents circuit optimizers from combining gates across the barrier. Useful for readability and preventing unwanted gate simplifications.'
   }
 ];
