@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
-QUMI_MODEL = os.getenv("QUMI_MODEL", "gpt-4o-mini").strip()
+QUMI_MODEL = "llama3-8b-8192"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GROK_API_KEY = os.getenv("GROK_API_KEY")
 
@@ -34,8 +34,7 @@ if GROK_API_KEY and GROK_API_KEY.startswith("gsk_"):
         api_key=GROK_API_KEY,
         base_url="https://api.groq.com/openai/v1"
     )
-    if os.getenv("QUMI_MODEL") is None:
-        QUMI_MODEL = "llama-3.1-8b-instant"
+    pass
 elif GROK_API_KEY:
     client = OpenAI(
         api_key=GROK_API_KEY,
