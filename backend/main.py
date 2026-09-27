@@ -23,7 +23,12 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
-QUMI_MODEL = "llama3-8b-8192"
+QUMI_MODEL = os.getenv("QUMI_MODEL", "openai/gpt-oss-20b").strip()
+
+if QUMI_MODEL == "llama-3.1-8b-instant" or QUMI_MODEL == "llama3-8b-8192":
+    print("[WARNING] Deprecated Qumi model detected. Use openai/gpt-oss-20b.")
+    QUMI_MODEL = "openai/gpt-oss-20b"
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GROK_API_KEY = os.getenv("GROK_API_KEY")
 
@@ -34,7 +39,6 @@ if GROK_API_KEY and GROK_API_KEY.startswith("gsk_"):
         api_key=GROK_API_KEY,
         base_url="https://api.groq.com/openai/v1"
     )
-    pass
 elif GROK_API_KEY:
     client = OpenAI(
         api_key=GROK_API_KEY,
@@ -394,6 +398,11 @@ You have access to the user's live application state. You can also trigger UI ac
         }
 
     except Exception as e:
-        print(f"[QUMI ERROR] {e}")
-        raise HTTPException(status_code=500, detail=f"Qumi Error: {str(e)}")
+        error_msg = str(e).lower()
+        if "404" in error_msg or "model_not_found" in error_msg or "does not exist" in error_msg:
+            print(f"[QUMI ERROR] Provider rejected model: {QUMI_MODEL}")
+            raise HTTPException(status_code=503, detail="QUMI_MODEL_UNAVAILABLE")
+            
+        print(f"[QUMI ERROR] API request failed (safe log)")
+        raise HTTPException(status_code=500, detail="QUMI_SERVICE_ERROR")
 
