@@ -35,14 +35,16 @@ if AI_API_KEY:
     if not AI_BASE_URL:
         if AI_API_KEY.startswith("gsk_"):
             kwargs["base_url"] = "https://api.groq.com/openai/v1"
-            if not os.getenv("QUMI_MODEL"):
-                QUMI_MODEL = "llama-3.1-70b-versatile"
+            if "gpt" in QUMI_MODEL or "openai" in QUMI_MODEL:
+                QUMI_MODEL = "llama-3.1-8b-instant"
         elif AI_API_KEY.startswith("xai-") or os.getenv("GROK_API_KEY") == AI_API_KEY:
             kwargs["base_url"] = "https://api.x.ai/v1"
-            if not os.getenv("QUMI_MODEL"):
+            if "gpt" in QUMI_MODEL or "openai" in QUMI_MODEL:
                 QUMI_MODEL = "grok-beta"
     else:
         kwargs["base_url"] = AI_BASE_URL
+        if "groq.com" in AI_BASE_URL and ("gpt" in QUMI_MODEL or "openai" in QUMI_MODEL):
+            QUMI_MODEL = "llama-3.1-8b-instant"
         
     client = OpenAI(**kwargs)
 else:
