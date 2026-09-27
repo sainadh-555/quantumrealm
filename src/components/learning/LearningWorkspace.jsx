@@ -10,7 +10,8 @@ export default function LearningWorkspace({
   activeTool,
   setActiveTool,
   setActiveWorkspace,
-  setSimulationTool
+  setSimulationTool,
+  onNavigateTo3D
 }) {
   const handlePlayConceptInRush = () => {
     setActiveTool('rush');
@@ -64,6 +65,7 @@ export default function LearningWorkspace({
           <QumiWorkspace 
             mode="tutor" 
             onCircuitAction={handleExploreInLab}
+            onNavigate={onNavigateTo3D}
           />
         </div>
       )}

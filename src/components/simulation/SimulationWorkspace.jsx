@@ -18,7 +18,8 @@ export default function SimulationWorkspace({
   activeTool,
   setActiveTool,
   initialConcept,
-  onCircuitUpdate
+  onCircuitUpdate,
+  onNavigateTo3D
 }) {
   const conceptStarters = {
     superposition: { qubits: 1, classicalBits: 1, columns: 3, operations: [{ id: 'h-1', gate: 'H', qubit: 0, column: 0 }, { id: 'h-m', gate: 'MEASURE', qubit: 0, column: 1 }] },
@@ -311,6 +312,7 @@ export default function SimulationWorkspace({
               <QumiWorkspace 
                 circuit={circuit}
                 results={results}
+                onNavigate={onNavigateTo3D}
                 onCircuitAction={(actionType, circuitData) => {
                   if (circuitData) {
                     updateCircuitState(circuitData);

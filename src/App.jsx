@@ -65,6 +65,7 @@ export default function App() {
               setActiveTool={setSimulationTool}
               initialConcept={injectedLabConcept}
               onCircuitUpdate={() => {}}
+              onNavigateTo3D={() => { setActiveWorkspace('learning'); setLearningTool('3d'); }}
             />
           )}
 
@@ -74,6 +75,7 @@ export default function App() {
               setActiveTool={setLearningTool}
               setActiveWorkspace={setActiveWorkspace}
               setSimulationTool={handleJumpToSimulation}
+              onNavigateTo3D={() => { setActiveWorkspace('learning'); setLearningTool('3d'); }}
             />
           )}
         </main>
