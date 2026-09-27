@@ -45,7 +45,41 @@ export default function SimulationWorkspace({
   const [isGatesExpanded, setIsGatesExpanded] = useState(true);
   const [isCodeEditorExpanded, setIsCodeEditorExpanded] = useState(false);
   const [isBottomExpanded, setIsBottomExpanded] = useState(false);
+  const [bottomPaneHeight, setBottomPaneHeight] = useState(350);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [isQumiExpanded, setIsQumiExpanded] = useState(false);
+
+  // Resize Handlers
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startHeight = bottomPaneHeight;
+
+    const handleMouseMove = (moveEvent) => {
+      const deltaY = startY - moveEvent.clientY;
+      const newHeight = Math.max(100, Math.min(window.innerHeight - 150, startHeight + deltaY));
+      setBottomPaneHeight(newHeight);
+      setIsMaximized(false);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const toggleMaximize = () => {
+    if (isMaximized) {
+      setBottomPaneHeight(350);
+      setIsMaximized(false);
+    } else {
+      setBottomPaneHeight(window.innerHeight - 150);
+      setIsMaximized(true);
+    }
+  };
 
   useEffect(() => {
     if (initialConcept && conceptStarters[initialConcept]) {
@@ -268,7 +302,20 @@ export default function SimulationWorkspace({
       </div>
 
       {/* BOTTOM PANE: Expandable Analysis (Results, Bloch Sphere, State Vectors) */}
-      <div className={`transition-all duration-300 border border-white/10 rounded-2xl bg-[#070919]/90 overflow-hidden flex flex-col shadow-2xl ${isBottomExpanded ? 'h-[350px] shrink-0' : 'h-14 shrink-0'}`}>
+      <div 
+        style={{ height: isBottomExpanded ? `${bottomPaneHeight}px` : '56px' }}
+        className="transition-[height] duration-200 border border-white/10 rounded-2xl bg-[#070919]/90 overflow-hidden flex flex-col shadow-2xl relative shrink-0"
+      >
+        {/* Resize Handle */}
+        {isBottomExpanded && (
+          <div 
+            className="w-full h-2 absolute top-0 left-0 cursor-ns-resize hover:bg-cyan-500/20 z-10 flex items-center justify-center group"
+            onMouseDown={handleMouseDown}
+          >
+            <div className="w-12 h-1 rounded-full bg-white/20 group-hover:bg-cyan-400/50 transition-colors" />
+          </div>
+        )}
+
         {/* Bottom Bar Header / Toggle */}
         <div 
           className="flex items-center justify-between h-14 px-6 cursor-pointer hover:bg-white/5 bg-white/[0.02]"
@@ -281,7 +328,20 @@ export default function SimulationWorkspace({
             <span className="text-gray-600">|</span>
             <span className="text-gray-400 hover:text-gray-300 transition-colors">STATE VECTORS</span>
           </div>
-          {isBottomExpanded ? <ChevronDown className="w-5 h-5 text-gray-500"/> : <ChevronUp className="w-5 h-5 text-cyan-500 animate-pulse"/>}
+          <div className="flex items-center gap-4">
+            {isBottomExpanded && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMaximize();
+                }}
+                className="text-gray-400 hover:text-cyan-400 transition-colors text-xs font-mono border border-gray-600 hover:border-cyan-500/50 px-2 py-0.5 rounded"
+              >
+                {isMaximized ? 'RESTORE' : 'MAXIMIZE'}
+              </button>
+            )}
+            {isBottomExpanded ? <ChevronDown className="w-5 h-5 text-gray-500"/> : <ChevronUp className="w-5 h-5 text-cyan-500 animate-pulse"/>}
+          </div>
         </div>
         
         {/* Expanded Content */}

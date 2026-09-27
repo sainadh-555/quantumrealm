@@ -1,57 +1,34 @@
-import React, { useState } from 'react';
-import { Search, Book, Bookmark, Compass, Zap, Layers, PlayCircle, Library } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Search, Book, Bookmark, Compass, Zap, Layers, PlayCircle, Library, ArrowUpRight } from 'lucide-react';
+import { QUANTUM_CONCEPTS } from '../../data/quantumConcepts';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
-const LIBRARY_CONTENT = [
-  { id: 'qubit', category: 'FOUNDATIONS', title: 'Qubit (Quantum Bit)', content: 'The fundamental unit of quantum information. Unlike a classical bit (0 or 1), a qubit can exist in a superposition of both states simultaneously until measured.' },
-  { id: 'basis-states', category: 'FOUNDATIONS', title: 'Basis States (|0⟩ and |1⟩)', content: 'The two orthogonal basis states of a single qubit. They correspond to the classical 0 and 1, represented as column vectors in quantum mechanics.' },
-  { id: 'superposition', category: 'FOUNDATIONS', title: 'Superposition', content: 'A principle where a quantum system can exist in multiple states at once. Applying a Hadamard (H) gate to a |0⟩ state puts it in an equal superposition of |0⟩ and |1⟩.' },
-  { id: 'measurement', category: 'FOUNDATIONS', title: 'Measurement', content: 'The act of observing a quantum state, which forces it to collapse into one of its basis states (e.g., |0⟩ or |1⟩) based on its probability amplitudes.' },
-  { id: 'phase', category: 'FOUNDATIONS', title: 'Quantum Phase', content: 'The angle of a quantum state in the complex plane. While global phase has no observable effect, relative phase is crucial for quantum interference.' },
-  
-  { id: 'h-gate', category: 'GATES', title: 'Hadamard Gate (H)', content: 'Creates a superposition. It maps |0⟩ to (|0⟩ + |1⟩)/√2 and |1⟩ to (|0⟩ - |1⟩)/√2. It represents a 90-degree rotation around the Y-axis followed by a 180-degree rotation around X.' },
-  { id: 'x-gate', category: 'GATES', title: 'Pauli-X Gate (NOT)', content: 'The quantum equivalent of a classical NOT gate. It flips |0⟩ to |1⟩ and |1⟩ to |0⟩. Visually, it is a 180-degree rotation around the X-axis of the Bloch sphere.' },
-  { id: 'y-gate', category: 'GATES', title: 'Pauli-Y Gate', content: 'Applies a bit and phase flip. It rotates the state 180 degrees around the Y-axis of the Bloch sphere.' },
-  { id: 'z-gate', category: 'GATES', title: 'Pauli-Z Gate', content: 'A phase-flip gate. It leaves |0⟩ unchanged but flips the sign of |1⟩. It rotates the state 180 degrees around the Z-axis of the Bloch sphere.' },
-  { id: 's-gate', category: 'GATES', title: 'S Gate (Phase)', content: 'Applies a 90-degree rotation around the Z-axis. It is the square root of the Pauli-Z gate.' },
-  { id: 't-gate', category: 'GATES', title: 'T Gate', content: 'Applies a 45-degree rotation around the Z-axis. It is the square root of the S gate.' },
-  { id: 'cnot', category: 'GATES', title: 'CNOT (Controlled-NOT)', content: 'A 2-qubit gate. It flips the target qubit ONLY if the control qubit is |1⟩. Essential for creating entanglement.' },
-  { id: 'cz', category: 'GATES', title: 'CZ (Controlled-Z)', content: 'A 2-qubit gate. Applies a Z gate to the target ONLY if the control is |1⟩.' },
-  { id: 'swap', category: 'GATES', title: 'SWAP Gate', content: 'Exchanges the states of two qubits.' },
-
-  { id: 'bell-states', category: 'CIRCUITS', title: 'Bell States (Entanglement)', content: 'Four specific maximally entangled two-qubit states. The most common is created by applying an H gate to the control qubit, followed by a CNOT to the target.' },
-  { id: 'interference', category: 'CIRCUITS', title: 'Quantum Interference', content: 'The addition of probability amplitudes. Constructive interference increases the probability of an outcome, while destructive interference cancels it out.' },
-
-  { id: 'grover', category: 'ALGORITHMS', title: "Grover's Algorithm", content: 'A quantum algorithm that searches an unsorted database of N items in O(√N) time, providing a quadratic speedup over classical algorithms.' },
-  { id: 'shor', category: 'ALGORITHMS', title: "Shor's Algorithm", content: 'A quantum algorithm for integer factorization that runs exponentially faster than the best-known classical equivalent. It poses a threat to RSA encryption.' },
-  { id: 'qft', category: 'ALGORITHMS', title: 'Quantum Fourier Transform (QFT)', content: 'The quantum analogue of the discrete Fourier transform. It is a critical component in many quantum algorithms, including Shor\'s and quantum phase estimation.' },
-  { id: 'teleportation', category: 'ALGORITHMS', title: 'Quantum Teleportation', content: 'A protocol for transmitting quantum information from one qubit to another using entanglement and classical communication, without moving the physical particle.' },
-  
-  { id: 'bloch-sphere', category: 'VISUALIZATION', title: 'Bloch Sphere', content: 'A geometric representation of the pure state space of a single qubit. The poles represent the |0⟩ and |1⟩ states, while the equator represents equal superpositions.' },
-  
-  { id: 'vqe', category: 'ADVANCED', title: 'Variational Quantum Eigensolver (VQE)', content: 'A hybrid quantum-classical algorithm used to find the lowest eigenvalue of a matrix, typically used in quantum chemistry to find molecular ground states.' },
-  { id: 'qaoa', category: 'ADVANCED', title: 'QAOA', content: 'Quantum Approximate Optimization Algorithm. A hybrid algorithm designed to solve combinatorial optimization problems.' },
-  { id: 'error-correction', category: 'ADVANCED', title: 'Quantum Error Correction', content: 'Techniques used to protect quantum information from errors due to decoherence and other quantum noise by encoding a logical qubit into multiple physical qubits.' },
-];
-
-const CATEGORIES = [
-  { id: 'ALL', label: 'All Topics', icon: <Library className="w-4 h-4" /> },
-  { id: 'FOUNDATIONS', label: 'Foundations', icon: <Compass className="w-4 h-4" /> },
-  { id: 'GATES', label: 'Quantum Gates', icon: <Zap className="w-4 h-4" /> },
-  { id: 'CIRCUITS', label: 'Circuits & States', icon: <Layers className="w-4 h-4" /> },
-  { id: 'ALGORITHMS', label: 'Algorithms', icon: <PlayCircle className="w-4 h-4" /> },
-  { id: 'VISUALIZATION', label: 'Visualization', icon: <Book className="w-4 h-4" /> },
-  { id: 'ADVANCED', label: 'Advanced', icon: <Bookmark className="w-4 h-4" /> },
-];
-
-export default function ELibrary() {
+export default function ELibrary({ onExploreInLab, onAskQumi }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [selectedTopic, setSelectedTopic] = useState(null);
 
-  const filteredContent = LIBRARY_CONTENT.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          item.content.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = activeCategory === 'ALL' || item.category === activeCategory;
+  // Dynamically extract categories from concepts
+  const CATEGORIES = useMemo(() => {
+    const cats = new Set(QUANTUM_CONCEPTS.map(c => c.category));
+    const catArray = Array.from(cats).map(c => ({
+      id: c.toUpperCase(),
+      label: c,
+      icon: <Book className="w-4 h-4" />
+    }));
+    return [
+      { id: 'ALL', label: 'All Topics', icon: <Library className="w-4 h-4" /> },
+      ...catArray
+    ];
+  }, []);
+
+  const filteredContent = QUANTUM_CONCEPTS.filter(item => {
+    const searchTarget = (item.name + ' ' + item.description + ' ' + item.details).toLowerCase();
+    const matchesSearch = searchTarget.includes(searchQuery.toLowerCase());
+    const matchesCategory = activeCategory === 'ALL' || (item.category && item.category.toUpperCase() === activeCategory);
     return matchesSearch && matchesCategory;
   });
 
@@ -116,19 +93,37 @@ export default function ELibrary() {
                     {selectedTopic.category}
                   </span>
                   <h1 className="text-3xl sm:text-4xl font-bold text-white mt-6 mb-8 font-['Space_Grotesk']">
-                    {selectedTopic.title}
+                    {selectedTopic.name}
                   </h1>
-                  <p className="text-lg text-gray-300 leading-relaxed max-w-3xl">
-                    {selectedTopic.content}
-                  </p>
                   
-                  <div className="mt-12 pt-8 border-t border-white/10 flex gap-4">
-                    <button className="px-6 py-3 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-sm font-semibold transition-all">
-                      Try in Quantum Lab
-                    </button>
-                    <button className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 text-sm font-semibold transition-all">
-                      Ask Qumi Tutor
-                    </button>
+                  <div className="prose prose-invert max-w-none text-gray-300">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                    >
+                      {selectedTopic.details}
+                    </ReactMarkdown>
+                  </div>
+                  
+                  <div className="mt-12 pt-8 border-t border-white/10 flex flex-wrap gap-4">
+                    {onExploreInLab && (
+                      <button 
+                        onClick={() => onExploreInLab(selectedTopic.id)}
+                        className="px-6 py-3 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-sm font-semibold transition-all flex items-center gap-2"
+                      >
+                        <Zap className="w-4 h-4" />
+                        Try in Quantum Lab
+                      </button>
+                    )}
+                    {onAskQumi && (
+                      <button 
+                        onClick={onAskQumi}
+                        className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 text-sm font-semibold transition-all flex items-center gap-2"
+                      >
+                        <Compass className="w-4 h-4" />
+                        Ask Qumi Tutor
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -139,10 +134,10 @@ export default function ELibrary() {
                     <div
                       key={item.id}
                       onClick={() => setSelectedTopic(item)}
-                      className="group cursor-pointer bg-white/[0.02] border border-white/10 hover:border-purple-500/40 hover:bg-purple-500/5 rounded-2xl p-6 transition-all duration-300"
+                      className="group cursor-pointer bg-white/[0.02] border border-white/10 hover:border-purple-500/40 hover:bg-purple-500/5 rounded-2xl p-6 transition-all duration-300 flex flex-col h-full"
                     >
                       <div className="flex justify-between items-start mb-4">
-                        <span className="text-[10px] font-mono text-purple-400 uppercase tracking-widest">
+                        <span className="text-[10px] font-mono text-purple-400 uppercase tracking-widest bg-purple-900/30 px-2 py-1 rounded">
                           {item.category}
                         </span>
                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
@@ -150,16 +145,16 @@ export default function ELibrary() {
                         </div>
                       </div>
                       <h3 className="text-xl font-bold text-gray-100 mb-2 font-['Space_Grotesk'] group-hover:text-white transition-colors">
-                        {item.title}
+                        {item.name}
                       </h3>
-                      <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed">
-                        {item.content}
+                      <p className="text-sm text-gray-400 line-clamp-3 leading-relaxed flex-1">
+                        {item.description}
                       </p>
                     </div>
                   ))
                 ) : (
                   <div className="col-span-full py-20 text-center flex flex-col items-center justify-center">
-                    <Search className="w-12 h-12 text-gray-600 mb-4" />
+                    <Search className="w-12 h-12 text-gray-600 mb-4 opacity-50" />
                     <h3 className="text-xl font-bold text-gray-400 font-['Space_Grotesk']">No concepts found</h3>
                     <p className="text-gray-500 mt-2">Try adjusting your search terms.</p>
                   </div>
@@ -172,10 +167,3 @@ export default function ELibrary() {
     </div>
   );
 }
-
-// Helper icon component since it wasn't imported at the top
-const ArrowUpRight = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M7 17l9.2-9.2M17 17V7H7"/>
-  </svg>
-);

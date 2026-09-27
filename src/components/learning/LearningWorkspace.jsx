@@ -5,6 +5,7 @@ import QuantumAlgorithms from '../algorithms/QuantumAlgorithms';
 import Learning3D from '../threeD/Learning3D';
 import ELibrary from '../library/ELibrary';
 import QumiWorkspace from '../ai/QumiWorkspace';
+import QuantumQuiz from './QuantumQuiz';
 
 export default function LearningWorkspace({
   activeTool,
@@ -34,6 +35,12 @@ export default function LearningWorkspace({
         />
       )}
 
+      {activeTool === 'quizzes' && (
+        <div className="w-full h-full">
+          <QuantumQuiz />
+        </div>
+      )}
+
       {activeTool === 'rush' && (
         <div className="w-full h-full">
           <QuantumRush
@@ -57,7 +64,10 @@ export default function LearningWorkspace({
       )}
 
       {activeTool === 'library' && (
-        <ELibrary />
+        <ELibrary 
+          onExploreInLab={handleExploreInLab}
+          onAskQumi={() => setActiveTool('qumi')}
+        />
       )}
 
       {activeTool === 'qumi' && (

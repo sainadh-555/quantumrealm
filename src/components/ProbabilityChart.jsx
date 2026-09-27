@@ -33,6 +33,14 @@ export default function ProbabilityChart({ probabilities = {}, counts = {}, shot
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+              <defs>
+                {COLORS.map((color, idx) => (
+                  <linearGradient key={`grad-${idx}`} id={`grad-${idx}`} x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+                    <stop offset="100%" stopColor={color} stopOpacity={1} />
+                  </linearGradient>
+                ))}
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
               <XAxis
                 dataKey="state"
@@ -60,7 +68,7 @@ export default function ProbabilityChart({ probabilities = {}, counts = {}, shot
               />
               <Bar dataKey="probability" radius={[8, 8, 0, 0]}>
                 {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell key={`cell-${index}`} fill={`url(#grad-${index % COLORS.length})`} />
                 ))}
               </Bar>
             </BarChart>

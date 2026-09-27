@@ -12,6 +12,10 @@ import {
   BookOpen
 } from 'lucide-react';
 import { AIService } from '../../services/AIService';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 export default function QumiWorkspace({ 
   mode = 'tutor', 
@@ -210,8 +214,22 @@ export default function QumiWorkspace({
                     </div>
                   )}
                   
-                  <div className="whitespace-pre-wrap font-sans text-sm sm:text-base leading-relaxed">
-                    {msg.content}
+                  <div className="font-sans text-sm sm:text-base leading-relaxed overflow-x-auto hide-scrollbar prose prose-invert prose-purple max-w-none">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkMath]} 
+                      rehypePlugins={[rehypeKatex]}
+                      components={{
+                        code({node, inline, className, children, ...props}) {
+                          return (
+                            <code className={`${className} bg-black/30 rounded px-1.5 py-0.5 text-pink-300 font-mono text-[0.9em]`} {...props}>
+                              {children}
+                            </code>
+                          )
+                        }
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
                   </div>
 
                   {msg.action && (

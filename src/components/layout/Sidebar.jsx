@@ -11,6 +11,7 @@ import {
   Play,
   Box,
   Library,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -29,6 +30,7 @@ export default function Sidebar({
 
   const learningTools = [
     { id: 'learn', label: 'Learn', icon: BookOpen },
+    { id: 'quizzes', label: 'Quizzes', icon: CheckCircle2 },
     { id: 'rush', label: 'Quantum Rush', icon: Play, isHighlight: true },
     { id: 'algorithms', label: 'Algorithms', icon: Binary },
     { id: '3d', label: '3D Learning', icon: Box },
